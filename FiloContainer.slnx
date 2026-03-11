@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Filo/Filo.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Filo.Blazor/Filo.Blazor.csproj" Id="e4995863-c972-42d1-b7e8-f7efdb57ce1e" />
+    <Project Path="test/Filo.Console/Filo.Console.csproj" />
+    <Project Path="test/Filo.Test/Filo.Test.csproj" Id="1282eb8c-663c-4797-b8e1-cfc05550f61f" />
+  </Folder>
+</Solution>

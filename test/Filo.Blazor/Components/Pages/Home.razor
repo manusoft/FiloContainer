@@ -1,0 +1,83 @@
+﻿@page "/"
+@using ManuHub.Filo
+@inject NavigationManager NavManager
+
+<PageTitle>Home</PageTitle>
+
+<h3>FILO Media Player</h3>
+
+<InputFile OnChange="OnFileChangedAsync" />
+
+@if (IsLoading)
+{
+    <p>Loading files...</p>
+}
+else if(Files != null)
+{
+    <label>Select Video:</label>
+    <select class="form-select-lg" @onchange="OnFileSelected">
+        <option value="">-- Select a file --</option>
+        @foreach (var f in Files)
+        {
+            <option value="@f">@f</option>
+        }
+    </select>
+}
+
+@if (!string.IsNullOrEmpty(SelectedFile))
+{
+    <h4>Playing: @SelectedFile</h4>
+    <video controls width="720">
+        <source src="@($"/api/video/{SelectedFile}")" type="video/mp4" />
+        Your browser does not support HTML5 video.
+    </video>
+}
+
+@code {
+    private bool IsLoading { get; set; } = false;
+    private List<string>? Files;
+    private string? SelectedFileName;
+    private string? SelectedFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var reader = new FiloReader("wwwroot/temp/backup.filo");
+        await reader.InitializeAsync();
+        Files = reader.ListFiles().ToList();
+    }
+
+    private async Task OnFileChangedAsync(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            IsLoading = true;
+            var uploadedFile = e.File;
+
+            // Set maxAllowedSize to, for example, 100 MB
+            var maxAllowedSize = 1024 * 1024 * 1024;
+
+            var tempPath = Path.Combine("wwwroot/temp", uploadedFile.Name);
+            Directory.CreateDirectory("wwwroot/temp");
+
+            // Dispose both streams explicitly
+            await using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            await using (var inputStream = uploadedFile.OpenReadStream(maxAllowedSize))
+            {
+                await inputStream.CopyToAsync(fs);
+            }
+
+            // Now safe to open with FiloReader
+            var reader = new FiloReader(tempPath);
+            await reader.InitializeAsync();
+            Files = reader.ListFiles().ToList();
+            IsLoading = false;
+        }
+    }
+
+
+    private void OnFileSelected(ChangeEventArgs e)
+    {
+        SelectedFile = e.Value?.ToString();
+        StateHasChanged();
+    }
+}
