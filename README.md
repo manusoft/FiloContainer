@@ -3,6 +3,7 @@
 ![Static Badge](https://img.shields.io/badge/FILO-blue)
 ![NuGet Version](https://img.shields.io/nuget/v/Filo)
 ![NuGet Downloads](https://img.shields.io/nuget/dt/Filo)
+<p align="center"><img src="https://visitor-badge.laobi.icu/badge?page_id=manusoft/FiloContainer" style="max-width: 100%;"></p>
 
 ---
 
