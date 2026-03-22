@@ -38,6 +38,16 @@ public class FiloHeader
     public string Encryption { get; set; } = "none";
 
     /// <summary>
+    /// Kdf
+    /// </summary>
+    public string? Kdf { get; set; } // v1.1
+
+    /// <summary>
+    /// Password salt
+    /// </summary>
+    public string? Salt { get; set; } // v1.1
+
+    /// <summary>
     /// Optional container description
     /// </summary>
     public string? Description { get; set; }
