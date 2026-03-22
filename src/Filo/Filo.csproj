@@ -22,11 +22,9 @@
 	<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<PackageIcon>icon.png</PackageIcon>
 	<Icon>icon.png</Icon>
-	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<VersionSuffix></VersionSuffix>
 	<PackageReleaseNotes>Initial release with multi-file streaming, chunked encryption, and metadata support.</PackageReleaseNotes>
 	<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-	<IsPackable>true</IsPackable>	
 	<AotAssemblies>true</AotAssemblies>
 </PropertyGroup>
 

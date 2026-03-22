@@ -103,12 +103,12 @@ public class FiloReader
     /// <summary>
     /// Returns all files inside the container.
     /// </summary>
-    public IEnumerable<string> ListFiles() => _fileEntries.Select(f => f.FileName);
+    public IEnumerable<string> ListFiles() => _fileEntries.Select(f => f.FilePath);
 
     /// <summary>
     /// Returns file metadata entry.
     /// </summary>
-    public FileEntry? GetFileEntry(string fileName) => _fileEntries.FirstOrDefault(f => f.FileName == fileName);
+    public FileEntry? GetFileEntry(string fileName) => _fileEntries.FirstOrDefault(f => f.FilePath == fileName);
 
     /// <summary>
     /// Derives a 256-bit AES key from password using PBKDF2.
@@ -132,7 +132,7 @@ public class FiloReader
     /// </summary>
     public async IAsyncEnumerable<byte[]> StreamFileAsync(string fileName, byte[]? key = null)
     {
-        var entry = _fileEntries.FirstOrDefault(f => f.FileName == fileName)
+        var entry = _fileEntries.FirstOrDefault(f => f.FilePath == fileName)
                 ?? throw new FileNotFoundException($"File '{fileName}' not found in container.");
 
         if (Header.Encryption == "AES256" && key == null)

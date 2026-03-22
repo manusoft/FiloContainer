@@ -3,6 +3,18 @@ using System.Security.Cryptography;
 
 string filoPath = "backupv1.1.filo";
 
+//var path = "C:\\Users\\manua\\Videos\\anu.mp4";
+
+//var parentPath = Directory.GetParent(Path.GetDirectoryName(path) ?? "")?.FullName;
+
+//var result = parentPath != null
+//    ? Path.GetRelativePath(parentPath, path).Replace('\\', '/')
+//    : Path.GetFileName(path);
+
+//Console.WriteLine(result);
+
+//return;
+
 try
 {
     // Create container
@@ -40,7 +52,7 @@ try
     // Reassemble
     foreach (var f in reader.ListFiles())
     {
-        string outFile = $"restored_{f}";
+        string outFile = $"restored_{Path.GetFileName(f)}";
         await using var filoStream = new FiloStream(reader, f, key);
         await using var output = new FileStream(outFile, FileMode.Create);
         await filoStream.CopyToAsync(output);

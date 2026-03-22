@@ -92,9 +92,10 @@ public class FiloWriter
             {
                 var entry = new FileEntry
                 {
-                    FileName = Path.GetFileName(filePath),
+                    FilePath = Path.GetFileName(filePath),
                     MimeType = meta.MimeType,
-                    FileSize = new FileInfo(filePath).Length
+                    FileSize = new FileInfo(filePath).Length,
+                    Encrypted = _encrypt,
                 };
 
                 try
