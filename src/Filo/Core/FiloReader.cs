@@ -1,5 +1,6 @@
 ﻿using ManuHub.Filo.Utils;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace ManuHub.Filo;
@@ -7,7 +8,9 @@ namespace ManuHub.Filo;
 public class FiloReader
 {
     private readonly string _path;
+
     private List<FileEntry> _fileEntries = new();
+    private Dictionary<string, FileEntry> _fileMap = new(StringComparer.OrdinalIgnoreCase);
 
     public FiloHeader Header { get; private set; } = default!;
     public FiloReader(string path) => _path = path;
@@ -19,42 +22,51 @@ public class FiloReader
     {
         try
         {
-            await using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            await using var fs = new FileStream(
+                _path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                128 * 1024,
+                FileOptions.SequentialScan);
 
             if (fs.Length < 16)
                 throw new InvalidDataException("FILO container too small or corrupted.");
 
-            // -------- MAGIC --------
+            // MAGIC
             var magicBuffer = new byte[4];
             await fs.ReadExactlyAsync(magicBuffer);
 
-            var magic = System.Text.Encoding.ASCII.GetString(magicBuffer);
+            var magic = Encoding.ASCII.GetString(magicBuffer);
 
             if (magic != Filo.Magic)
                 throw new InvalidDataException("Invalid FILO container.");
 
-            // -------- VERSION --------
+            // VERSION
             var intBuffer = new byte[4];
             await fs.ReadExactlyAsync(intBuffer);
+
             int version = BitConverter.ToInt32(intBuffer);
 
             if (version > Filo.Version)
                 throw new InvalidDataException("Unsupported FILO version.");
 
-            // -------- HEADER --------
+            // HEADER LENGTH
             await fs.ReadExactlyAsync(intBuffer);
+
             int headerLength = BitConverter.ToInt32(intBuffer);
 
             if (headerLength <= 0 || headerLength > 1_000_000)
                 throw new InvalidDataException("Invalid header length.");
 
+            // HEADER
             var headerBytes = new byte[headerLength];
             await fs.ReadExactlyAsync(headerBytes);
 
             Header = JsonSerializer.Deserialize<FiloHeader>(headerBytes)
                 ?? throw new InvalidDataException("Failed to deserialize header.");
 
-            // -------- FOOTER --------
+            // FOOTER
             fs.Seek(-16, SeekOrigin.End);
 
             var longBuffer = new byte[8];
@@ -68,7 +80,7 @@ public class FiloReader
             if (indexOffset >= fs.Length)
                 throw new InvalidDataException("Invalid index offset.");
 
-            // -------- READ INDEX --------
+            // READ INDEX
             fs.Position = indexOffset;
 
             await fs.ReadExactlyAsync(intBuffer);
@@ -82,6 +94,9 @@ public class FiloReader
 
             _fileEntries = JsonSerializer.Deserialize<List<FileEntry>>(indexBytes)
                            ?? throw new InvalidDataException("Failed to parse index.");
+
+            // FAST LOOKUP MAP
+            _fileMap = _fileEntries.ToDictionary(f => f.Path, StringComparer.OrdinalIgnoreCase);
         }
         catch (FileNotFoundException)
         {
@@ -100,15 +115,49 @@ public class FiloReader
         }
     }
 
+    public bool FileExists(string path)
+    {
+        return _fileMap.ContainsKey(path);
+    }
+
+    /// <summary>
+    /// Returns file inside the container.
+    /// </summary>
+    public FiloFileInfo? GetFileInfo(string path)
+    {
+        if (!_fileMap.TryGetValue(path, out var entry))
+            return null;
+
+        if (entry == null)
+            return null;
+
+        return new FiloFileInfo
+        {
+            Name = Path.GetFileName(path),
+            Path = entry.Path,
+            MimeType = entry.MimeType,
+            FileSize = entry.FileSize,
+            ChunkCount = entry.Chunks.Count,
+            Encrypted = entry.Encrypted
+        };
+    }
+
     /// <summary>
     /// Returns all files inside the container.
     /// </summary>
-    public IEnumerable<string> ListFiles() => _fileEntries.Select(f => f.FilePath);
-
-    /// <summary>
-    /// Returns file metadata entry.
-    /// </summary>
-    public FileEntry? GetFileEntry(string fileName) => _fileEntries.FirstOrDefault(f => f.FilePath == fileName);
+    /// <returns></returns>
+    public IReadOnlyList<FiloFileInfo> ListFiles()
+    {
+        return _fileEntries.Select(e => new FiloFileInfo
+        {
+            Name = Path.GetFileName(e.Path),
+            Path = e.Path,
+            MimeType = e.MimeType,
+            FileSize = e.FileSize,
+            ChunkCount = e.Chunks.Count,
+            Encrypted = e.Encrypted
+        }).ToList();
+    }
 
     /// <summary>
     /// Derives a 256-bit AES key from password using PBKDF2.
@@ -124,6 +173,14 @@ public class FiloReader
 
         Rfc2898DeriveBytes.Pbkdf2(password, salt, key, 100_000, HashAlgorithmName.SHA256);
 
+        if (Header.PasswordCheck != null)
+        {
+            var check = SHA256.HashData(key);
+
+            if (!check.SequenceEqual(Header.PasswordCheck))
+                throw new CryptographicException("Invalid password.");
+        }
+
         return key;
     }
 
@@ -132,13 +189,22 @@ public class FiloReader
     /// </summary>
     public async IAsyncEnumerable<byte[]> StreamFileAsync(string fileName, byte[]? key = null)
     {
-        var entry = _fileEntries.FirstOrDefault(f => f.FilePath == fileName)
-                ?? throw new FileNotFoundException($"File '{fileName}' not found in container.");
+        if (!_fileMap.TryGetValue(fileName, out var entry))
+            throw new FileNotFoundException($"File '{fileName}' not found in container.");
 
         if (Header.Encryption == "AES256" && key == null)
             throw new InvalidOperationException("This container is encrypted. Provide a key.");
 
-        await using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (entry.Chunks.Count == 0)
+            yield break;
+
+        await using var fs = new FileStream(
+            _path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            128 * 1024,
+            FileOptions.SequentialScan);
 
         foreach (var chunk in entry.Chunks)
         {
@@ -150,17 +216,12 @@ public class FiloReader
             {
                 if (Header.Encryption == "AES256")
                 {
-                    // -------- IV --------
                     var iv = new byte[16];
                     await fs.ReadExactlyAsync(iv);
 
-                    // -------- LENGTH --------
                     var lenBuf = new byte[4];
                     await fs.ReadExactlyAsync(lenBuf);
                     int len = BitConverter.ToInt32(lenBuf);
-
-                    if (len <= 0 || len > 100_000_000)
-                        throw new InvalidDataException("Invalid encrypted chunk length.");
 
                     var enc = new byte[len];
                     await fs.ReadExactlyAsync(enc);
@@ -169,17 +230,20 @@ public class FiloReader
                 }
                 else
                 {
-                    // -------- LENGTH --------
                     var lenBuf = new byte[4];
                     await fs.ReadExactlyAsync(lenBuf);
-                    int len = BitConverter.ToInt32(lenBuf);
 
-                    if (len <= 0 || len > 100_000_000)
-                        throw new InvalidDataException("Invalid chunk length.");
+                    int len = BitConverter.ToInt32(lenBuf);
 
                     dataChunk = new byte[len];
                     await fs.ReadExactlyAsync(dataChunk);
                 }
+
+                // INTEGRITY CHECK
+                var computed = Convert.ToHexString(SHA256.HashData(dataChunk));
+
+                if (!string.Equals(computed, chunk.Hash, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"Chunk {chunk.Id} failed integrity check.");
             }
             catch (IOException ioEx)
             {
@@ -200,4 +264,54 @@ public class FiloReader
     /// Creates a stream for reading a file directly.
     /// </summary>
     public Stream OpenStream(string fileName, byte[]? key = null) => new FiloStream(this, fileName, key);
+
+    public async Task ExtractFileAsync(string path, string outputPath, byte[]? key = null)
+    {
+        using var stream = OpenStream(path, key);
+        using var output = File.Create(outputPath);
+
+        await stream.CopyToAsync(output);
+    }
+
+    public async Task ExtractDirectoryAsync(string directory, string outputFolder, byte[]? key = null)
+    {
+        Directory.CreateDirectory(outputFolder);
+
+        var files = ListFiles()
+            .Where(f => f.Path.StartsWith(directory, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var file in files)
+        {
+            var relative = file.Path.Substring(directory.Length).TrimStart('/');
+
+            var outputPath = Path.Combine(outputFolder, relative);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+            await using var input = new FiloStream(this, file.Path, key);
+            await using var output = new FileStream(outputPath, FileMode.Create);
+
+            await input.CopyToAsync(output);
+        }
+    }
+
+    public static async Task<FiloHeader> ReadHeaderAsync(string path)
+    {
+        await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+
+        var magic = new byte[4];
+        await fs.ReadExactlyAsync(magic);
+
+        var intBuf = new byte[4];
+
+        await fs.ReadExactlyAsync(intBuf); // version
+
+        await fs.ReadExactlyAsync(intBuf);
+        int headerLen = BitConverter.ToInt32(intBuf);
+
+        var headerBytes = new byte[headerLen];
+        await fs.ReadExactlyAsync(headerBytes);
+
+        return JsonSerializer.Deserialize<FiloHeader>(headerBytes)!;
+    }
 }

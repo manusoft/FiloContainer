@@ -2,7 +2,7 @@
 
 public class FileEntry
 {
-    public string FilePath { get; set; } = "";
+    public string Path { get; set; } = "";
     public string MimeType { get; set; } = "";
     public long FileSize { get; set; }
     public bool Encrypted { get; set; }

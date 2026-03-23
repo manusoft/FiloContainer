@@ -19,7 +19,43 @@ public class FiloWriter
 
     public FiloWriter AddFile(string filePath, FileMetadata metadata)
     {
+        var containerPath = metadata.ContainerPath ?? Path.GetFileName(filePath);
+
+        if (_files.Any(f =>
+            (f.meta.ContainerPath ?? Path.GetFileName(f.path))
+            .Equals(containerPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"Duplicate container path: {containerPath}");
+        }
+
         _files.Add((filePath, metadata));
+
+        return this;
+    }
+
+    public FiloWriter AddDirectory(string directoryPath, string? containerRoot = null)
+    {
+        if (!Directory.Exists(directoryPath))
+            throw new DirectoryNotFoundException(directoryPath);
+
+        var root = new DirectoryInfo(directoryPath);
+
+        foreach (var file in root.GetFiles("*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(directoryPath, file.FullName)
+                               .Replace('\\', '/');
+
+            var containerPath = containerRoot == null
+                ? relative
+                : $"{containerRoot.TrimEnd('/')}/{relative}";
+
+            AddFile(file.FullName, new FileMetadata
+            {
+                MimeType = GuessMimeType(file.FullName),
+                ContainerPath = containerPath
+            });
+        }
+
         return this;
     }
 
@@ -43,7 +79,7 @@ public class FiloWriter
         _key = key;
         return this;
     }
-       
+
     public async Task WriteAsync()
     {
         if (_files.Count == 0)
@@ -76,6 +112,7 @@ public class FiloWriter
                 Encryption = _encrypt ? "AES256" : "none",
                 Kdf = !string.IsNullOrWhiteSpace(_password) ? "PBKDF2" : null,
                 Salt = !string.IsNullOrWhiteSpace(_password) ? Convert.ToBase64String(_salt!) : null,
+                PasswordCheck = _encrypt ? SHA256.HashData(_key!) : null,
                 Description = "FILO multi-file container"
             };
 
@@ -92,7 +129,7 @@ public class FiloWriter
             {
                 var entry = new FileEntry
                 {
-                    FilePath = Path.GetFileName(filePath),
+                    Path = meta.ContainerPath ?? Path.GetFileName(filePath),
                     MimeType = meta.MimeType,
                     FileSize = new FileInfo(filePath).Length,
                     Encrypted = _encrypt,
@@ -194,5 +231,24 @@ public class FiloWriter
         _salt = RandomNumberGenerator.GetBytes(32);
         _key = new byte[32];
         Rfc2898DeriveBytes.Pbkdf2(_password!, _salt, _key, 100_000, HashAlgorithmName.SHA256);
+    }
+
+    private static string GuessMimeType(string file)
+    {
+        var ext = Path.GetExtension(file).ToLowerInvariant();
+
+        return ext switch
+        {
+            ".mp4" => "video/mp4",
+            ".mkv" => "video/x-matroska",
+            ".mp3" => "audio/mpeg",
+            ".wav" => "audio/wav",
+            ".srt" => "text/plain",
+            ".txt" => "text/plain",
+            ".json" => "application/json",
+            ".jpg" => "image/jpeg",
+            ".png" => "image/png",
+            _ => "application/octet-stream"
+        };
     }
 }
