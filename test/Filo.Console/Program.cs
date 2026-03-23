@@ -3,29 +3,29 @@ using System.Security.Cryptography;
 
 string filoPath = "backupv1.1.filo";
 
-//try
-//{
-//    Console.WriteLine("Create new filo container:");
-//    // Create container
-//    var writer = new FiloWriter(filoPath)
-//        .AddFile("C:\\Users\\manua\\Videos\\anu.mp4", new FileMetadata { MimeType = "video/mp4" })
-//        .AddFile("C:\\Users\\manua\\Videos\\anu_kavya.mp4", new FileMetadata { MimeType = "video/mp4" })
-//        .WithChunkSize(5_000_000)
-//        .WithPassword("1234567890");
+try
+{
+    Console.WriteLine("Create new filo container:");
+    // Create container
+    var writer = new FiloWriter(filoPath)
+        .AddFile("C:\\Users\\manua\\Videos\\anu.mp4", new FileMetadata { MimeType = "video/mp4" })
+        .AddFile("C:\\Users\\manua\\Videos\\anu_kavya.mp4", new FileMetadata { MimeType = "video/mp4" })
+        .WithChunkSize(5_000_000)
+        .WithPassword("1234567890");
 
-//    await writer.WriteAsync();
-//    Console.WriteLine("FILO container written!");
-//}
-//catch (CryptographicException cex)
-//{
-//    Console.WriteLine($"CRYPTO ERROR: {cex.Message}");
-//    return;
-//}
-//catch (Exception ex)
-//{
-//    Console.WriteLine($"ERROR:{ex.Message}");
-//    return;
-//}
+    await writer.WriteAsync();
+    Console.WriteLine("FILO container written!");
+}
+catch (CryptographicException cex)
+{
+    Console.WriteLine($"CRYPTO ERROR: {cex.Message}");
+    return;
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR:{ex.Message}");
+    return;
+}
 
 try
 {
@@ -39,7 +39,7 @@ try
     // Read container
     var reader = new FiloReader(filoPath);
     await reader.InitializeAsync();
-    var key = reader.DeriveKey("12345678901");
+    var key = reader.DeriveKey("1234567890");
 
     Console.WriteLine("Files in container:");
     // List files in container
