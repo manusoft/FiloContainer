@@ -6,35 +6,33 @@
 
 ---
 
-## FILO v1.1
+## FILO v1.1 Highlights
 
-Added:  
-✔ Chunk integrity hashing (SHA256)  
-✔ Password-based encryption (PBKDF2)  
+**Added:**
 
-Deprecated:  
-⚠ WithEncryption(byte[] key)
+* ✔ Chunk integrity hashing (SHA256)
+* ✔ Password-based encryption (PBKDF2)
 
-Use ``WithPassword(string password)`` instead.
+**Deprecated:**
+
+* ⚠ `WithEncryption(byte[] key)` — use `WithPassword(string password)` instead.
 
 ---
 
 ## Overview
 
-**FILO** (Files In, Layered & Organized) is a modern **multi-file container format** for .NET designed to handle **large files efficiently**.  
+**FILO** (Files In, Layered & Organized) is a modern **multi-file container format** for .NET designed for **large files**.
 It stores multiple files (video, audio, text, binaries, etc.) in a **single container**, supporting:
 
-- **Large files** (videos, audio, binaries)
-- **Multiple files per container**
-- Chunked streaming for **GB-sized files**
-- AES256 optional encryption per chunk
-- Metadata storage
-- File checksums for integrity
-- Fully async and memory-efficient operations
+* **Large files** (GB-sized videos, audio, binaries)
+* **Multiple files per container**
+* **Chunked streaming** for memory-efficient reads
+* **AES256 optional encryption per chunk**
+* **Embedded metadata**
+* **File checksums** for integrity
+* Fully **async APIs**
 
-> FILO = **Files In, Layered & Organized**
-
-It is ideal for **video/audio streaming, backup containers, and custom file packaging**.
+> FILO = **Files In, Layered & Organized** — ideal for **video/audio streaming, backups, and custom file packaging**.
 
 ---
 
@@ -115,7 +113,7 @@ Traditional ZIP or JSON-based storage has limitations:
 Install via NuGet:
 
 ```bash
-dotnet add package Filo.1.1.0
+dotnet add package Filo --version 1.1.0
 ````
 
 ---
@@ -126,9 +124,8 @@ dotnet add package Filo.1.1.0
 
 ```csharp
 using Filo;
-using System.Security.Cryptography;
 
-var pwd = "password"
+var pwd = "mypassword";
 
 var writer = new FiloWriter("backup.filo")
     .AddFile("video.mp4", new FileMetadata { MimeType = "video/mp4" })
@@ -148,10 +145,11 @@ await reader.InitializeAsync();
 
 var key = reader.DeriveKey("mypassword");
 
-// List files in container
+// List files
 foreach (var file in reader.ListFiles())
     Console.WriteLine(file);
 
+// Stream chunks
 await foreach (var chunk in reader.StreamFileAsync("video.mp4", key))
 {
     await chunk.WriteAsync(chunk);
@@ -163,61 +161,31 @@ await foreach (var chunk in reader.StreamFileAsync("video.mp4", key))
 ### Direct Streaming
 
 ```csharp
-var reader = new FiloReader("backup.filo");
-
-await reader.InitializeAsync();
-
-var key = reader.DeriveKey("mypassword");
-
 using var stream = reader.OpenStream("video.mp4", key);
 await stream.CopyToAsync(outputFile);
 ```
 
-### Extract Files Using FiloStream
+### Extract Files Using `FiloStream`
 
 ```csharp
-var reader = new FiloReader("backup.filo");
-
-await reader.InitializeAsync();
-
-var key = reader.Header.Encryption == "AES256"
-    ? reader.DeriveKey("mypassword")
-    : null;
-
 using var filoStream = new FiloStream(reader, "video.mp4", key);
 using var output = File.Create("video_restored.mp4");
 
 await filoStream.CopyToAsync(output);
-
 Console.WriteLine("File extracted!");
 ```
 
 ### Load Image
 
 ```csharp
-var reader = new FiloReader("images.filo");
-
-await reader.InitializeAsync();
-
 using var stream = new FiloStream(reader, "photo.jpg");
-
 using var image = System.Drawing.Image.FromStream(stream);
 
 Console.WriteLine($"Loaded image: {image.Width}x{image.Height}");
 
 ```
 
-## Streaming Video/Audio
-
-FILO supports **direct streaming without reassembling the file**:
-
-```csharp
-await using var filoStream = new FiloStream(reader, "video.mp4", key);
-await using var output = new FileStream("video_streamed.mp4", FileMode.Create);
-await filoStream.CopyToAsync(output);
-```
-
-### In Blazor Server / ASP.NET Core
+## Streaming Video/Audio in ASP.NET Core / Blazor
 
 ```csharp
 public async Task<IActionResult> GetVideo()
@@ -226,21 +194,17 @@ public async Task<IActionResult> GetVideo()
     await reader.InitializeAsync();
 
     var key = reader.DeriveKey("password");
-
     var stream = new FiloStream(reader, "movie.mp4", key);
 
     return File(stream, "video/mp4");
 }
 ```
 
-* Supports **large files**, **streaming**, and **AES256 encrypted chunks**
-* Browser can **seek**, **pause**, and **resume** seamlessly
+> Supports **large files**, **streaming**, and **AES256 encrypted chunks**. Browser can **seek, pause, and resume** seamlessly.
 
 ---
 
-## Multi-file container
-
-You can store multiple files in the same container:
+## Multi-file Container Example
 
 ```csharp
 var writer = new FiloWriter("media.filo")
@@ -253,16 +217,16 @@ var writer = new FiloWriter("media.filo")
 await writer.WriteAsync();
 ```
 
-* The container will store **indexes, metadata, and checksums**.
-* You can **stream each file individually** using `FiloStream` or `StreamFileAsync`.
+* Stores **indexes, metadata, and checksums**
+* Stream **each file individually** using `FiloStream` or `StreamFileAsync`
 
 ---
 
 ## Chunked Streaming
 
-* FILO reads files in **chunks** to minimize memory usage.
-* Suitable for **large video/audio files**.
-* Supports **AES256 encryption per chunk**.
+* Reads files in **memory-efficient chunks**
+* Ideal for **large video/audio files**
+* Supports **AES256 encryption per chunk**
 
 ```csharp
 await foreach (var chunk in reader.StreamFileAsync("largevideo.mp4", key))
@@ -270,6 +234,8 @@ await foreach (var chunk in reader.StreamFileAsync("largevideo.mp4", key))
     // Process chunk (send to player or API)
 }
 ```
+
+---
 
 ## ⚡ When to Use FiloStream vs StreamFileAsync  
 
@@ -284,18 +250,15 @@ await foreach (var chunk in reader.StreamFileAsync("largevideo.mp4", key))
 
 > Always verify checksum for **large file integrity**.
 
----
 
 ## Checksums & Integrity
-
-FILO stores **SHA256 checksums** for each file:
 
 ```csharp
 var checksum = await FiloChecksum.ComputeFileSHA256Async("video.mp4");
 Console.WriteLine(checksum);
 ```
 
-You can verify that **streamed files match the original**.
+* Ensures **streamed files match the original**
 
 ---
 
@@ -303,10 +266,10 @@ You can verify that **streamed files match the original**.
 
 | Class              | Key Methods                                                            |
 | ------------------ | ---------------------------------------------------------------------- |
-| `FiloWriter`       | `.AddFile()`, `.WithChunkSize()`, `.WithPassword()`, `.WriteAsync()` |
-| `FiloReader`       | `.InitializeAsync()`, `.ListFiles()`, `.StreamFileAsync()`             |
-| `FiloStream`       | `.ReadAsync()` – supports streaming directly to players                |
-| `FiloChecksum`     | `.ComputeFileSHA256Async()`, `.ComputeFileSHA256Async()`, `.ComputeSHA256()`, `.Verify()`,`.VerifyFileAsync()` |
+| `FiloWriter`       | `.AddFile()`, `AddDirectory()`, `.WithChunkSize()`, `.WithPassword()`, `.WriteAsync()` |
+| `FiloReader`       | `.InitializeAsync()`, `DeriveKey()`, `FileExists()`, `GetFileInfo()`, `.ListFiles()`, `.StreamFileAsync()`, `OpenStream()`, `ExtractFileAsync()`, `ExtractDirectoryAsync()`, `ReadHeaderAsync()`            |
+| `FiloStream`       | `.ReadAsync()` – supports streaming directly to players, `Read()`                |
+| `FiloChecksum`     | `.ComputeSHA256()`, `.ComputeSHA256Async()`, `.ComputeFileSHA256Async()`, `.ComputeFileSHA256Async()`,`.Verify()`, `VerifyFileAsync()` |
 | `FiloEncryption`   | `.Encrypt()`, `.Decrypt()`                                             |
 
 ---
