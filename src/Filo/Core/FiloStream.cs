@@ -5,8 +5,12 @@ public class FiloStream : Stream
     private readonly FiloReader _reader;
     private readonly string _fileName;
     private readonly byte[]? _key;
+
     private IAsyncEnumerator<byte[]>? _chunks;
-    private MemoryStream? _currentChunk;
+
+    private byte[]? _currentChunk;
+    private int _chunkPosition;
+
     private bool _initialized;
 
     public FiloStream(FiloReader reader, string fileName, byte[]? key = null)
@@ -20,31 +24,44 @@ public class FiloStream : Stream
     public override bool CanSeek => false;
     public override bool CanWrite => false;
     public override long Length => throw new NotSupportedException();
-    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
 
     public override void Flush() => throw new NotSupportedException();
+
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
     public override void SetLength(long value) => throw new NotSupportedException();
+
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
     private async Task EnsureInitializedAsync()
     {
-        if (!_initialized)
-        {
-            _chunks = _reader.StreamFileAsync(_fileName, _key).GetAsyncEnumerator();
-            _initialized = true;
-            await MoveNextChunkAsync();
-        }
+        if (_initialized)
+            return;
+
+        _chunks = _reader.StreamFileAsync(_fileName, _key).GetAsyncEnumerator();
+        _initialized = true;
+
+        await MoveNextChunkAsync();
     }
 
     private async Task MoveNextChunkAsync()
     {
-        if (_chunks != null)
+        if (_chunks == null)
+            return;
+
+        if (await _chunks.MoveNextAsync())
         {
-            if (await _chunks.MoveNextAsync())
-                _currentChunk = new MemoryStream(_chunks.Current);
-            else
-                _currentChunk = null;
+            _currentChunk = _chunks.Current;
+            _chunkPosition = 0;
+        }
+        else
+        {
+            _currentChunk = null;
         }
     }
 
@@ -53,33 +70,53 @@ public class FiloStream : Stream
         await EnsureInitializedAsync();
 
         if (_currentChunk == null)
-            return 0; // End of stream
+            return 0;
 
         int totalRead = 0;
 
         while (count > 0 && _currentChunk != null)
         {
-            int read = await _currentChunk.ReadAsync(buffer, offset, count, cancellationToken);
-            totalRead += read;
-            offset += read;
-            count -= read;
+            int remaining = _currentChunk.Length - _chunkPosition;
 
-            if (_currentChunk.Position >= _currentChunk.Length)
+            if (remaining <= 0)
+            {
                 await MoveNextChunkAsync();
+                continue;
+            }
+
+            int toCopy = Math.Min(count, remaining);
+
+            Buffer.BlockCopy(_currentChunk, _chunkPosition, buffer, offset, toCopy);
+
+            _chunkPosition += toCopy;
+            offset += toCopy;
+            count -= toCopy;
+            totalRead += toCopy;
         }
 
         return totalRead;
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        _chunks?.DisposeAsync().AsTask().Wait();
-        _currentChunk?.Dispose();
-        base.Dispose(disposing);
-    }
-
     public override int Read(byte[] buffer, int offset, int count)
     {
-        throw new NotImplementedException();
+        return ReadAsync(buffer, offset, count)
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            if (_chunks != null)
+            {
+                _chunks.DisposeAsync()
+                    .AsTask()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+        }
+
+        base.Dispose(disposing);
     }
 }
