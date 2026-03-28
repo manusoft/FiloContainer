@@ -22,7 +22,7 @@
             <AppBarSeparator />
         </CommandBar>
 
-        <SplitView Grid.Row="1" IsPaneOpen="True" PanePlacement="Right" PaneBackground="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <SplitView Grid.Row="1" DisplayMode="Inline" IsPaneOpen="True" PanePlacement="Right" PaneBackground="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <SplitView.Content>
                 <Grid>
                     <TextBlock Text="CONTENT" HorizontalAlignment="Center" VerticalAlignment="Center"/>
