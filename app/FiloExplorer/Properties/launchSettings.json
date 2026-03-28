@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FiloExplorer (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "FiloExplorer (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
