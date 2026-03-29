@@ -11,38 +11,155 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
+            <RowDefinition Height="*"/>
+            <!-- Main Content -->
         </Grid.RowDefinitions>
 
-        <CommandBar HorizontalAlignment="Left" DefaultLabelPosition="Right" >
-            <AppBarButton Icon="Save" Label="Save" ToolTipService.ToolTip="Save Filo Container" Click="Create_Click"/>
-            <AppBarSeparator />
-            <AppBarButton Icon="Document" Label="Add File" ToolTipService.ToolTip="Add Files" Click="AddFile_Click"/>
-            <AppBarButton Icon="Folder" Label="Add Folder" ToolTipService.ToolTip="Add Folders" Click="AddFolder_Click"/>
-            <AppBarSeparator />
+        <!-- CommandBar -->
+        <CommandBar Grid.Row="0" DefaultLabelPosition="Right">
+            <CommandBar.PrimaryCommands>
+                <AppBarButton Icon="Save" 
+                              Label="Create Archive" 
+                              ToolTipService.ToolTip="Save as .filo container"
+                              Click="Create_Click"/>
+                <AppBarSeparator />
+                <AppBarButton Icon="Add" 
+                              Label="Add Files" 
+                              ToolTipService.ToolTip="Add one or more files"
+                              Click="AddFile_Click"/>
+                <AppBarButton Icon="Folder" 
+                              Label="Add Folder" 
+                              ToolTipService.ToolTip="Add a folder recursively"
+                              Click="AddFolder_Click"/>
+                <AppBarSeparator />
+                <AppBarButton Icon="Delete" 
+                              Label="Remove" 
+                              ToolTipService.ToolTip="Remove selected item"
+                              Click="RemoveSelected_Click"/>
+                <AppBarButton Icon="Clear" 
+                              Label="Clear All" 
+                              ToolTipService.ToolTip="Clear all pending items"
+                              Click="ClearAll_Click"/>
+            </CommandBar.PrimaryCommands>
+
+            <CommandBar.Content>
+                <TextBlock Text="Create New Filo Archive" 
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           Margin="16,0,0,0"
+                           VerticalAlignment="Center"/>
+            </CommandBar.Content>
         </CommandBar>
 
-        <SplitView Grid.Row="1" DisplayMode="Inline" IsPaneOpen="True" PanePlacement="Right" PaneBackground="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <!-- Main Content -->
+        <SplitView x:Name="MainSplitView"
+                   Grid.Row="1"
+                   DisplayMode="Inline"
+                   IsPaneOpen="True"
+                   OpenPaneLength="380"
+                   PanePlacement="Right">
+
+            <!-- Left: Pending Items List -->
             <SplitView.Content>
-                <ListView x:Name="PendingList">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="models:PendingItem">
-                            <StackPanel Orientation="Horizontal" Padding="8">
-                                <Image Source="{Binding ImageSource}" Width="32" Height="32" Margin="0,0,8,0"/>
-                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <Grid>
+                    <ListView x:Name="PendingList"
+                              IsItemClickEnabled="False"
+                              SelectionMode="Single"
+                              Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <ListView.Header>
+                            <Border Padding="16,12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <TextBlock Text="Pending Items" 
+                                           Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            </Border>
+                        </ListView.Header>
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:PendingItem">
+                                <Grid Padding="12" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Image Source="{x:Bind Thumbnail, Mode=OneWay}" 
+                                           Width="32" Height="32"
+                                           Stretch="Uniform"/>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" 
+                                                   Style="{ThemeResource BodyTextBlockStyle}"/>
+                                        <TextBlock Text="{x:Bind Path}" 
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{x:Bind DisplaySize}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+
+                        <!-- Empty State -->
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+
+                    <!-- Empty State Overlay -->
+                    <Grid x:Name="EmptyStateGrid" 
+                          Visibility="Visible"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center">
+                            <SymbolIcon Symbol="Add" 
+                                        Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
+                            <TextBlock Text="No items added yet" 
+                                       Margin="0,16,0,4"
+                                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="Click 'Add Files' or 'Add Folder' to begin" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
             </SplitView.Content>
+
+            <!-- Right Pane: Info / Preview -->
             <SplitView.Pane>
-                <Grid Background="{StaticResource AcrylicBackgroundFillColorBaseBrush}">
-                    <TextBlock Text="PANE" />
+                <Grid Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" 
+                      Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Archive Information" 
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"
+                                   Margin="0,0,0,16"/>
+
+                        <TextBlock Text="Output File:" 
+                                   FontWeight="SemiBold"/>
+                        <TextBlock x:Name="OutputPathText" 
+                                   Text="NewArchive.filo"
+                                   TextWrapping="WrapWholeWords"
+                                   Margin="0,4,0,20"/>
+
+                        <TextBlock Text="Items to add:" 
+                                   FontWeight="SemiBold"/>
+                        <TextBlock x:Name="ItemCountText" 
+                                   Text="0 items"
+                                   Margin="0,4,0,0"/>
+
+                        <TextBlock Text="Estimated Size:" 
+                                   FontWeight="SemiBold" Margin="0,20,0,4"/>
+                        <TextBlock x:Name="EstimatedSizeText" 
+                                   Text="Calculating..."/>
+                    </StackPanel>
                 </Grid>
             </SplitView.Pane>
         </SplitView>
-
-
     </Grid>
 </Page>

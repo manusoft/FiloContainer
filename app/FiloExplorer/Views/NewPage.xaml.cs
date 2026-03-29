@@ -8,11 +8,9 @@ using Microsoft.Windows.Storage.Pickers;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace FiloExplorer.Views;
 
@@ -21,114 +19,190 @@ namespace FiloExplorer.Views;
 /// </summary>
 public sealed partial class NewPage : Page
 {
-    ObservableCollection<PendingItem> PendingItems = new();
+    private readonly ObservableCollection<PendingItem> _pendingItems = new();
 
     public NewPage()
     {
         InitializeComponent();
-        PendingList.ItemsSource = PendingItems;
+        PendingList.ItemsSource = _pendingItems;
+
+        // Show/hide empty state
+        _pendingItems.CollectionChanged += (s, e) =>
+        {
+            EmptyStateGrid.Visibility = _pendingItems.Count == 0
+                ? Visibility.Visible : Visibility.Collapsed;
+
+            UpdateInfoPanel();
+        };
     }
 
+    private void UpdateInfoPanel()
+    {
+        ItemCountText.Text = $"{_pendingItems.Count} item{(_pendingItems.Count != 1 ? "s" : "")}";
+        // You can add estimated size calculation here later
+    }
+
+    // ====================== Add Files ======================
     private async void AddFile_Click(object sender, RoutedEventArgs e)
     {
         var picker = new FileOpenPicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
-
         picker.FileTypeFilter.Add("*");
 
         var files = await picker.PickMultipleFilesAsync();
+        if (files == null) return;
 
-        foreach (var f in files)
+        foreach (var file in files)
         {
-            PendingItems.Add(new PendingItem
+            var item = new PendingItem
             {
-                Path = f.Path,
+                Path = file.Path,
+                //Name = file.DisplayName + file.FileType,
                 IsDirectory = false,
-                ImageSource = GetFileThumbnail(f.Path),
-            });
+                Thumbnail = await GetFileThumbnailAsync(file.Path)
+            };
+
+            _pendingItems.Add(item);
         }
     }
 
-    private BitmapImage? GetFileThumbnail(string path)
-    {
-        try
-        {
-            var storageFile = StorageFile.GetFileFromPathAsync(path).GetAwaiter().GetResult();
-            var storageItemThumbnail = storageFile.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale).GetAwaiter().GetResult();
-            var bitmapImage = new BitmapImage();
-            bitmapImage.SetSource(storageItemThumbnail);
-            return bitmapImage;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    private BitmapImage? GetFolderThumbnail(string path)
-    {
-        try
-        {
-            var storageFolder = StorageFolder.GetFolderFromPathAsync(path).GetAwaiter().GetResult();
-            var storageItemThumbnail = storageFolder.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale).GetAwaiter().GetResult();
-            var bitmapImage = new BitmapImage();
-            bitmapImage.SetSource(storageItemThumbnail);
-            return bitmapImage;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
+    // ====================== Add Folder ======================
     private async void AddFolder_Click(object sender, RoutedEventArgs e)
     {
         var picker = new FolderPicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
 
         var folder = await picker.PickSingleFolderAsync();
+        if (folder == null) return;
 
-        if (folder != null)
+        var item = new PendingItem
         {
-            PendingItems.Add(new PendingItem
-            {
-                Path = folder.Path,
-                IsDirectory = true,
-                ImageSource = GetFolderThumbnail(folder.Path)
-            });
+            Path = folder.Path,
+            //Name = folder.DisplayName,
+            IsDirectory = true,
+            Thumbnail = await GetFolderThumbnailAsync(folder.Path)
+        };
+
+        _pendingItems.Add(item);
+    }
+
+    // ====================== Thumbnail Helper (Async) ======================
+    private async Task<BitmapImage?> GetFileThumbnailAsync(string path)
+    {
+        try
+        {
+            var storageFile = await StorageFile.GetFileFromPathAsync(path);
+            var storageItemThumbnail = await storageFile.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale);
+            var bitmapImage = new BitmapImage();
+            bitmapImage.SetSource(storageItemThumbnail);
+            return bitmapImage;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
+    private async Task<BitmapImage?> GetFolderThumbnailAsync(string path)
+    {
+        try
+        {
+            var storageFolder = await StorageFolder.GetFolderFromPathAsync(path);
+            var storageItemThumbnail = await storageFolder.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale);
+            var bitmapImage = new BitmapImage();
+            bitmapImage.SetSource(storageItemThumbnail);
+            return bitmapImage;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // ====================== Create Archive ======================
     private async void Create_Click(object sender, RoutedEventArgs e)
     {
-        var writer = new FiloWriter(@"c:\downloads\output.filo")
-            .WithPassword("1234");
-
-        foreach (var item in PendingItems)
+        if (_pendingItems.Count == 0)
         {
-            if (item.IsDirectory)
-                writer.AddDirectory(item.Path, Path.GetFileName(item.Path));
-            else
-                writer.AddFile(item.Path, new FileMetadata
-                {
-                    MimeType = MimeHelper.GetMimeType(item.Path)
-                });
+            await ShowMessageAsync("No items", "Please add at least one file or folder.");
+            return;
         }
 
-        await writer.WriteAsync();
+        try
+        {
+            var picker = new FileSavePicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
+            picker.DefaultFileExtension =".filo";
+            picker.FileTypeChoices.Add("Filo Archive", new[] { ".filo" });
+            picker.SuggestedFileName = "NewArchive.filo";
+            picker.CommitButtonText = "Save File";
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            picker.SuggestedFolder = "";
 
-        PendingItems.Clear();
-        this.Frame.Navigate(typeof(MainPage));
+            // Show the picker dialog
+            var result = await picker.PickSaveFileAsync();
+
+            if (result != null)
+            {
+                string savePath = result.Path;
+
+                var writer = new FiloWriter(savePath)
+                           .WithPassword("1234");
+
+                foreach (var item in _pendingItems)
+                {
+                    if (item.IsDirectory)
+                    {
+                        writer.AddDirectory(item.Path, Path.GetFileName(item.Path));
+                    }
+                    else
+                    {
+                        writer.AddFile(item.Path, new FileMetadata
+                        {
+                            MimeType = MimeHelper.GetMimeType(item.Path)
+                        });
+                    }
+                }
+
+                await writer.WriteAsync();
+
+                await ShowMessageAsync("Success", "Filo archive created successfully!");
+                _pendingItems.Clear();
+                this.Frame.Navigate(typeof(MainPage));
+            }
+            else
+            {
+                await ShowMessageAsync("Error", "File save canceled.!");
+            }            
+        }
+        catch (Exception ex)
+        {
+            await ShowMessageAsync("Error", $"Failed to create archive:\n{ex.Message}");
+        }
     }
 
-    // Add Override Support (IMPORTANT)
-    //public void AddFileSmart(string path, string? mimeOverride = null)
-    //{
-    //    var mime = mimeOverride ?? MimeHelper.GetMimeType(path);
+    // ====================== Remove & Clear ======================
+    private void RemoveSelected_Click(object sender, RoutedEventArgs e)
+    {
+        if (PendingList.SelectedItem is PendingItem item)
+        {
+            _pendingItems.Remove(item);
+        }
+    }
 
-    //    writer.AddFile(path, new FileMetadata
-    //    {
-    //        MimeType = mime
-    //    });
-    //}
+    private void ClearAll_Click(object sender, RoutedEventArgs e)
+    {
+        _pendingItems.Clear();
+    }
+
+    private async Task ShowMessageAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = this.XamlRoot
+        };
+        await dialog.ShowAsync();
+    }
 
 
 }
