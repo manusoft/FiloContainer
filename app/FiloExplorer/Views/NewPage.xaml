@@ -20,6 +20,12 @@
         <!-- CommandBar -->
         <CommandBar Grid.Row="0" DefaultLabelPosition="Right">
             <CommandBar.PrimaryCommands>
+                <!-- Back Button -->
+                <AppBarButton Icon="Back" 
+                      Label="Back" 
+                      ToolTipService.ToolTip="Go back to home"
+                      Click="BackButton_Click"/>
+                <AppBarSeparator />
                 <AppBarButton Icon="Save" 
                               Label="Create Archive" 
                               ToolTipService.ToolTip="Save as .filo container"
@@ -122,6 +128,7 @@
                                         Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
                             <TextBlock Text="No items added yet" 
                                        Margin="0,16,0,4"
+                                       HorizontalAlignment="Center"
                                        Style="{ThemeResource SubtitleTextBlockStyle}"/>
                             <TextBlock Text="Click 'Add Files' or 'Add Folder' to begin" 
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -134,29 +141,78 @@
             <!-- Right Pane: Info / Preview -->
             <SplitView.Pane>
                 <Grid Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" 
-                      Padding="16">
-                    <StackPanel>
-                        <TextBlock Text="Archive Information" 
-                                   Style="{ThemeResource SubtitleTextBlockStyle}"
-                                   Margin="0,0,0,16"/>
+                      Padding="20">
+                    <StackPanel Spacing="20">
+                        <!-- Header -->
+                        <TextBlock Text="Archive Settings" 
+                       Style="{ThemeResource SubtitleTextBlockStyle}" 
+                       FontWeight="SemiBold"/>
 
-                        <TextBlock Text="Output File:" 
-                                   FontWeight="SemiBold"/>
-                        <TextBlock x:Name="OutputPathText" 
-                                   Text="NewArchive.filo"
-                                   TextWrapping="WrapWholeWords"
-                                   Margin="0,4,0,20"/>
+                        <!-- Output File -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Output File" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="OutputPathText" 
+                                       Text="NewArchive.filo" 
+                                       TextWrapping="WrapWholeWords"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
-                        <TextBlock Text="Items to add:" 
-                                   FontWeight="SemiBold"/>
-                        <TextBlock x:Name="ItemCountText" 
-                                   Text="0 items"
-                                   Margin="0,4,0,0"/>
+                            <Button Content="Change Location" 
+                                    Style="{StaticResource TextBlockButtonStyle}" 
+                                    Click="ChangeOutputPath_Click"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,4,0,0"/>
+                        </StackPanel>
 
-                        <TextBlock Text="Estimated Size:" 
-                                   FontWeight="SemiBold" Margin="0,20,0,4"/>
-                        <TextBlock x:Name="EstimatedSizeText" 
-                                   Text="Calculating..."/>
+
+                        <!-- Items Summary -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Items to Add" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="ItemCountText" 
+                                       Text="0 items" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <!-- Estimated Size -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Estimated Size" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="EstimatedSizeText" 
+                                       Text="Calculating..." 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <!-- Password Section -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Encryption Password" 
+                                       FontWeight="SemiBold"/>
+
+                            <TextBlock Text="Your files will be encrypted with AES-256" 
+                                       FontSize="13"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+
+                            <PasswordBox x:Name="PasswordText" 
+                                         PlaceholderText="Enter password (optional)"
+                                         PasswordRevealMode="Peek"
+                                         Margin="0,4,0,0"/>
+
+                            <TextBlock Text="Leave empty for no encryption" 
+                                       FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <!-- Create Button (Big & Prominent) -->
+                        <Button Content="Create Filo Archive" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,20,0,0"
+                                Click="Create_Click"
+                                Height="48"
+                                FontSize="16"
+                                FontWeight="SemiBold"/>
                     </StackPanel>
                 </Grid>
             </SplitView.Pane>

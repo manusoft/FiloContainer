@@ -126,51 +126,54 @@ public sealed partial class NewPage : Page
             return;
         }
 
+        string password = PasswordText.Password?.Trim() ?? "";
+
         try
         {
+            // Choose output path first (better UX)
             var picker = new FileSavePicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
-            picker.DefaultFileExtension =".filo";
+            picker.DefaultFileExtension = ".filo";
             picker.FileTypeChoices.Add("Filo Archive", new[] { ".filo" });
             picker.SuggestedFileName = "NewArchive.filo";
-            picker.CommitButtonText = "Save File";
+            picker.CommitButtonText = "Save Filo";
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             picker.SuggestedFolder = "";
 
             // Show the picker dialog
-            var result = await picker.PickSaveFileAsync();
+            var file = await picker.PickSaveFileAsync();
+            if (file == null) return;
 
-            if (result != null)
+            string savePath = file.Path;
+            OutputPathText.Text = file.Path;
+
+            var writer = new FiloWriter(savePath);
+
+            if (!string.IsNullOrEmpty(PasswordText.Password))
             {
-                string savePath = result.Path;
-
-                var writer = new FiloWriter(savePath)
-                           .WithPassword("1234");
-
-                foreach (var item in _pendingItems)
-                {
-                    if (item.IsDirectory)
-                    {
-                        writer.AddDirectory(item.Path, Path.GetFileName(item.Path));
-                    }
-                    else
-                    {
-                        writer.AddFile(item.Path, new FileMetadata
-                        {
-                            MimeType = MimeHelper.GetMimeType(item.Path)
-                        });
-                    }
-                }
-
-                await writer.WriteAsync();
-
-                await ShowMessageAsync("Success", "Filo archive created successfully!");
-                _pendingItems.Clear();
-                this.Frame.Navigate(typeof(MainPage));
+                writer.WithPassword(PasswordText.Password);
             }
-            else
+
+            foreach (var item in _pendingItems)
             {
-                await ShowMessageAsync("Error", "File save canceled.!");
-            }            
+                if (item.IsDirectory)
+                {
+                    writer.AddDirectory(item.Path, Path.GetFileName(item.Path));
+                }
+                else
+                {
+                    writer.AddFile(item.Path, new FileMetadata
+                    {
+                        MimeType = MimeHelper.GetMimeType(item.Path)
+                    });
+                }
+            }
+
+            await writer.WriteAsync();
+
+            await ShowMessageAsync("Success", $"Filo archive created successfully!\n\n{file.Path}");
+
+            _pendingItems.Clear();
+            Frame.GoBack();
         }
         catch (Exception ex)
         {
@@ -201,8 +204,19 @@ public sealed partial class NewPage : Page
             CloseButtonText = "OK",
             XamlRoot = this.XamlRoot
         };
+
         await dialog.ShowAsync();
     }
 
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Frame.CanGoBack)
+            Frame.GoBack();
+    }
+
+    private async void ChangeOutputPath_Click(object sender, RoutedEventArgs e)
+    {
+        // Fix later
+    }
 
 }

@@ -22,6 +22,11 @@
         <!-- Top CommandBar -->
         <CommandBar Grid.Row="0" DefaultLabelPosition="Right">
             <CommandBar.PrimaryCommands>
+                <AppBarButton Icon="Back" 
+                              Label="Back" 
+                              ToolTipService.ToolTip="Go back"
+                              Click="BackButton_Click"/>
+                <AppBarSeparator/>
                 <AppBarButton Icon="Up" Label="Up" Click="UpButton_Click" />
                 <AppBarSeparator/>
                 <AppBarButton Icon="Save" Label="Extract" Click="ExtractButton_Click"/>

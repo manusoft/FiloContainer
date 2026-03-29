@@ -14,38 +14,83 @@
     </Window.SystemBackdrop>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <!-- Custom Title Bar Area -->
+        <Grid x:Name="AppTitleBar" 
+              Height="48" 
+              VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <MenuBar Grid.Row="0">
-            <MenuBarItem Title="File">
-                <MenuFlyoutItem x:Name="menuFileNew" Text="New" Icon="Document" Click="menuFileNew_Click">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="N"/>
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="menuFileOpen" Text="Open..." Icon="OpenFile">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="O"/>
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="menuFileExit" Text="Exit"/>
-            </MenuBarItem>
-            <MenuBarItem Title="Help">
-                <MenuFlyoutItem x:Name="menuHelpView" Text="View Help" Icon="Help" >
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="F1"/>
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="menuHelpAbout" Text="About Filo Explorer"/>
-            </MenuBarItem>
-        </MenuBar>
-        
-        <Frame Grid.Row="1" x:Name="RootFrame" />
+            <!-- App Icon + Title -->
+            <StackPanel Orientation="Horizontal" 
+                        Spacing="12" 
+                        Margin="16,0,0,0" 
+                        VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/AppIcon.png" 
+                       Width="24" Height="24"/>
+                <TextBlock x:Name="AppTitleText" 
+                           Text="Filo Explorer" 
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- MenuBar will sit below or integrated -->
+        </Grid>
+
+        <Grid Margin="0,38,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- MenuBar -->
+                <RowDefinition Height="*"/>
+                <!-- Content Frame -->
+            </Grid.RowDefinitions>
+
+            <!-- Modern MenuBar -->
+            <MenuBar Grid.Row="0" 
+                     Margin="12,8,12,0">
+                <MenuBarItem Title="File">
+                    <MenuFlyoutItem x:Name="menuFileNew" 
+                                    Text="New Container" 
+                                    Icon="Document" 
+                                    Click="menuFileNew_Click">
+                        <MenuFlyoutItem.KeyboardAccelerators>
+                            <KeyboardAccelerator Modifiers="Control" Key="N"/>
+                        </MenuFlyoutItem.KeyboardAccelerators>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem x:Name="menuFileOpen" 
+                                    Text="Open Container..." 
+                                    Icon="OpenFile" 
+                                    Click="menuFileOpen_Click">
+                        <MenuFlyoutItem.KeyboardAccelerators>
+                            <KeyboardAccelerator Modifiers="Control" Key="O"/>
+                        </MenuFlyoutItem.KeyboardAccelerators>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem x:Name="menuFileExit" 
+                                    Text="Exit" 
+                                    Click="menuFileExit_Click"/>
+                </MenuBarItem>
+
+                <MenuBarItem Title="Help">
+                    <MenuFlyoutItem x:Name="menuHelpView" 
+                                    Text="View Help" 
+                                    Icon="Help" 
+                                    Click="menuHelpView_Click"/>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem x:Name="menuHelpAbout" 
+                                    Text="About Filo Explorer" 
+                                    Click="menuHelpAbout_Click"/>
+                </MenuBarItem>
+            </MenuBar>
+
+            <!-- Main Content Frame -->
+            <Frame x:Name="RootFrame" 
+                   Grid.Row="1"
+                   Padding="0"/>
+        </Grid>
     </Grid>
 </Window>

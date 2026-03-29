@@ -25,9 +25,9 @@ public sealed partial class ViewPage : Page
     private FiloReader _reader;
     private readonly List<FiloFileInfo> _allFiles = new();
     private readonly ObservableCollection<ContainerItem> _items = new();
-
     private string _currentFolder = "";
-    private byte[] _key;
+    private byte[]? _key;
+    private string? _archivePath;
 
     public ObservableCollection<string> BreadcrumbItems { get; } = new();
 
@@ -35,39 +35,158 @@ public sealed partial class ViewPage : Page
     {
         InitializeComponent();
         FileList.ItemsSource = _items;
+
+        this.Loaded += ViewPage_Loaded;
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        _archivePath = e.Parameter as string;
 
+        if (string.IsNullOrEmpty(_archivePath))
+        {
+            Frame.GoBack();
+        }
+
+        // Do nothing heavy here — wait for Loaded
+    }
+
+    private async void ViewPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        this.Loaded -= ViewPage_Loaded;   // Prevent multiple calls
+
+        if (string.IsNullOrEmpty(_archivePath)) return;
+
+        await OpenArchiveWithPasswordAsync(_archivePath);
+    }
+
+    private async Task OpenArchiveWithPasswordAsync(string path)
+    {
         try
         {
-            string path = e.Parameter as string;
             _reader = new FiloReader(path);
             await _reader.InitializeAsync();
 
-            _key = _reader.Header.Encryption == "AES256"
-                ? _reader.DeriveKey("1234")  // Consider making password configurable
-                : null;
+            // === Password Handling for Filo 1.1.0 ===
+            if (_reader.Header.Encryption == "AES256")
+            {
+                string? password = await PromptForPasswordAsync();
 
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    await ShowMessageAsync("Operation Cancelled", "Password is required for this encrypted archive.");
+                    Frame.GoBack();
+                    return;
+                }
+
+                _key = _reader.DeriveKey(password);
+
+                // Basic validation (Filo 1.1.0 style)
+                if (!await ValidatePasswordAsync())
+                {
+                    await ShowMessageAsync("Invalid Password", "The password entered is incorrect.");
+                    Frame.GoBack();
+                    return;
+                }
+            }
+            else
+            {
+                _key = null; // No encryption
+            }
+
+            // Load files
             _allFiles.Clear();
             _allFiles.AddRange(_reader.ListFiles());
 
             RefreshView();
             UpdateBreadcrumb();
+
+            // Optional: Show encryption status in UI
+            if (_key != null)
+                PreviewHeaderText.Text = "Preview (Encrypted Archive)";
         }
         catch (Exception ex)
         {
-            // TODO: Show error dialog
-            ContentDialog dialog = new()
-            {
-                Title = "Error",
-                Content = $"Failed to open archive: {ex.Message}",
-                CloseButtonText = "OK"
-            };
-            await dialog.ShowAsync();
+            await ShowErrorAsync("Failed to Open Archive", ex.Message);
+            Frame.GoBack();
         }
+    }
+
+    private async Task<string?> PromptForPasswordAsync()
+    {
+        var passwordBox = new PasswordBox
+        {
+            PlaceholderText = "Enter archive password",
+            Width = 320,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+
+        var content = new StackPanel
+        {
+            Spacing = 8,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "This archive is encrypted with AES-256.\nPlease enter the correct password to unlock it.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 8)
+                },
+                passwordBox
+            }
+        };
+
+        var dialog = new ContentDialog
+        {
+            Title = "Encrypted Filo Archive",
+            Content = content,
+            PrimaryButtonText = "Unlock",
+            SecondaryButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = this.XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        return result == ContentDialogResult.Primary ? passwordBox.Password?.Trim() : null;
+    }
+
+    private async Task<bool> ValidatePasswordAsync()
+    {
+        try
+        {
+            // Simple but effective for Filo 1.1.0
+            var testFiles = _reader!.ListFiles();
+            return testFiles.Count > 0;   // If no exception → password is good
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task ShowErrorAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = this.XamlRoot
+        };
+        await dialog.ShowAsync();
+    }
+
+    private async Task ShowMessageAsync(string title, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = this.XamlRoot
+        };
+        await dialog.ShowAsync();
     }
 
     void RefreshView()
@@ -267,5 +386,15 @@ public sealed partial class ViewPage : Page
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshView();
+    }
+
+    private void BackButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Frame.CanGoBack)
+        {
+            PreviewImage.Source = null;
+            MediaPlayerElement.Source = null;            
+            Frame.GoBack();
+        }
     }
 }
