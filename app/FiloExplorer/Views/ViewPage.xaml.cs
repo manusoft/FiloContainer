@@ -2,19 +2,16 @@ using FiloExplorer.Models;
 using ManuHub.Filo;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System.Threading.Tasks;
+using Windows.Media.Core;
+using Windows.Storage.Streams;
 
 namespace FiloExplorer.Views;
 
@@ -24,10 +21,10 @@ namespace FiloExplorer.Views;
 public sealed partial class ViewPage : Page
 {
     FiloReader reader;
-    IReadOnlyList<FiloFileInfo> allFiles;
-    string currentFolder = "";
-
+    List<FiloFileInfo> allFiles = new();
     ObservableCollection<ContainerItem> Items = new();
+    string currentFolder = "";
+    byte[] key;
 
     public ViewPage()
     {
@@ -41,8 +38,11 @@ public sealed partial class ViewPage : Page
         reader = new FiloReader(path);
         await reader.InitializeAsync();
 
-        allFiles = reader.ListFiles();
+        key = reader.Header.Encryption == "AES256"
+            ? reader.DeriveKey("1234")
+            : null;
 
+        allFiles = reader.ListFiles().ToList();
         FileList.ItemsSource = Items;
 
         RefreshView();
@@ -52,72 +52,156 @@ public sealed partial class ViewPage : Page
     {
         Items.Clear();
 
-        // Files in current folder
-        var files = allFiles
-            .Where(f => f.Directory == currentFolder);
+        var folders = new HashSet<string>();
 
-        // Folders in current folder
-        var folders = allFiles
-            .Where(f => f.Directory.StartsWith(currentFolder))
-            .Select(f =>
-            {
-                var remaining = f.Directory.Substring(currentFolder.Length).Trim('/');
-                return remaining.Split('/')[0];
-            })
-            .Where(name => !string.IsNullOrEmpty(name))
-            .Distinct();
-
-        // Add folders first
-        foreach (var folder in folders)
+        foreach (var file in allFiles)
         {
-            Items.Add(new ContainerItem
-            {
-                Name = folder,
-                IsFolder = true
-            });
-        }
+            if (!file.Directory.StartsWith(currentFolder)) continue;
 
-        // Then files
-        foreach (var file in files)
-        {
-            Items.Add(new ContainerItem
-            {
-                Name = file.Name,
-                IsFolder = false
-            });
-        }
-    }
+            var relative = file.Directory.Substring(currentFolder.Length).Trim('/');
 
-    private void FileList_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        if (FileList.SelectedItem is ContainerItem item)
-        {
-            if (item.IsFolder)
+            if (string.IsNullOrEmpty(relative))
             {
-                currentFolder = string.IsNullOrEmpty(currentFolder)
-                    ? item.Name
-                    : $"{currentFolder}/{item.Name}";
-
-                RefreshView();
+                Items.Add(new ContainerItem
+                {
+                    Name = file.Name,
+                    FullPath = file.Path,
+                    IsFolder = false,
+                    Size = file.FileSize,
+                    MimeType = file.MimeType,
+                    Encrypted = file.Encrypted
+                });
             }
             else
             {
-                var file = allFiles.First(f =>
-                    f.Name == item.Name &&
-                    f.Directory == currentFolder);
-
-                // 👉 You can preview or extract here
+                folders.Add(relative.Split('/')[0]);
             }
+        }
+
+        foreach (var folder in folders.OrderBy(x => x))
+        {
+            Items.Insert(0, new ContainerItem
+            {
+                Name = folder,
+                FullPath = $"{currentFolder}/{folder}".Trim('/'),
+                IsFolder = true
+            });
+           
+        }
+
+        UpdateBreadcrumb();
+    }
+
+    private async void FileList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        var item = e.ClickedItem as ContainerItem;
+
+        if (item.IsFolder)
+        {
+            currentFolder = item.FullPath;
+            RefreshView();
+        }
+        else
+        {
+            await PreviewFile(item);
         }
     }
 
-    private void Back_Click(object sender, RoutedEventArgs e)
+    // -------- Preview --------
+    async Task PreviewFile(ContainerItem item)
     {
-        if (string.IsNullOrEmpty(currentFolder)) return;
+        var filoStream = new FiloStream(reader, item.FullPath, key);
 
-        var parts = currentFolder.Split('/');
-        currentFolder = string.Join("/", parts.Take(parts.Length - 1));
+        if (item.MimeType.StartsWith("image"))
+        {
+            var ras = await ToRandomAccessStream(filoStream);
 
-        RefreshView();
+            var bitmap = new BitmapImage();
+            await bitmap.SetSourceAsync(ras);
+
+            PreviewImage.Source = bitmap;
+            PreviewImage.Visibility = Visibility.Visible;
+            MediaPlayer.Source = null;
+            MediaPlayer.AreTransportControlsEnabled = false;
+            MediaPlayer.Visibility = Visibility.Collapsed;
+        }
+        else if (item.MimeType.StartsWith("video") || item.MimeType.StartsWith("audio"))
+        {
+            var ras = await ToRandomAccessStream(filoStream);
+            MediaPlayer.Source = MediaSource.CreateFromStream(ras, item.MimeType);
+            MediaPlayer.Visibility = Visibility.Visible;
+            MediaPlayer.MediaPlayer.Play();
+            MediaPlayer.AreTransportControlsEnabled = true;
+            PreviewImage.Visibility = Visibility.Collapsed;
+            PreviewImage.Source = null;
+        }
+
+        // if (mime.StartsWith("image"))
+        //    ShowImage();
+        // else if (mime.StartsWith("video"))
+        //    PlayVideo();
+        // else if (mime.StartsWith("audio"))
+        //    PlayAudio();
+        // else if (mime.StartsWith("text"))
+        //    ShowText();
+        // else
+        //    ShowGeneric();
+    }
+
+    async Task<IRandomAccessStream> ToRandomAccessStream(Stream input)
+    {
+        var memory = new MemoryStream();
+        await input.CopyToAsync(memory);
+        memory.Position = 0;
+
+        return memory.AsRandomAccessStream();
+    }
+
+    // -------- Extract --------
+    async Task ExtractSelected(ContainerItem item)
+    {
+        await reader.ExtractFileAsync(item.FullPath, "output_path", key);
+    }
+
+    // -------- Breadcrumb --------
+
+
+    public ObservableCollection<string> BreadcrumbItems { get; set; } = new();
+
+    void UpdateBreadcrumb()
+    {
+        BreadcrumbItems.Clear();
+
+        var parts = string.IsNullOrEmpty(currentFolder)
+            ? new List<string>()
+            : currentFolder.Split('/').ToList();
+
+        string path = "";
+
+        AddCrumb("Home", "");
+
+        foreach (var part in parts)
+        {
+            path = string.IsNullOrEmpty(path) ? part : $"{path}/{part}";
+            AddCrumb(part, path);
+        }
+    }
+
+    void AddCrumb(string name, string path)
+    {
+        BreadcrumbBar.ItemClicked += (s, e) =>
+        {
+            var items = BreadcrumbBar.ItemsSource as ObservableCollection<string>;
+            for (int i = items.Count - 1; i >= e.Index + 1; i--)
+            {
+                items.RemoveAt(i);
+                RefreshView();
+            }
+
+            currentFolder = path;
+        };
+
+        BreadcrumbItems.Add(name);
+        BreadcrumbBar.ItemsSource = BreadcrumbItems;
     }
 }

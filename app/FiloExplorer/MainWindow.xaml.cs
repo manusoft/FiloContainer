@@ -24,6 +24,6 @@ public sealed partial class MainWindow : Window
 
     private void menuFileNew_Click(object sender, RoutedEventArgs e)
     {
-        RootFrame.Navigate(typeof(MainPage));
+        RootFrame.Navigate(typeof(NewPage));
     }
 }

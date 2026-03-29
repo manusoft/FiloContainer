@@ -1,21 +1,15 @@
+using FiloExplorer.Helpers;
 using FiloExplorer.Models;
 using ManuHub.Filo;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.Storage.Pickers;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Windows.Storage;
+using Windows.Storage.FileProperties;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -48,8 +42,41 @@ public sealed partial class NewPage : Page
             PendingItems.Add(new PendingItem
             {
                 Path = f.Path,
-                IsDirectory = false
+                IsDirectory = false,
+                ImageSource = GetFileThumbnail(f.Path),
             });
+        }
+    }
+
+    private BitmapImage? GetFileThumbnail(string path)
+    {
+        try
+        {
+            var storageFile = StorageFile.GetFileFromPathAsync(path).GetAwaiter().GetResult();
+            var storageItemThumbnail = storageFile.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale).GetAwaiter().GetResult();
+            var bitmapImage = new BitmapImage();
+            bitmapImage.SetSource(storageItemThumbnail);
+            return bitmapImage;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private BitmapImage? GetFolderThumbnail(string path)
+    {
+        try
+        {
+            var storageFolder = StorageFolder.GetFolderFromPathAsync(path).GetAwaiter().GetResult();
+            var storageItemThumbnail = storageFolder.GetThumbnailAsync(ThumbnailMode.ListView, 32, ThumbnailOptions.UseCurrentScale).GetAwaiter().GetResult();
+            var bitmapImage = new BitmapImage();
+            bitmapImage.SetSource(storageItemThumbnail);
+            return bitmapImage;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 
@@ -64,7 +91,8 @@ public sealed partial class NewPage : Page
             PendingItems.Add(new PendingItem
             {
                 Path = folder.Path,
-                IsDirectory = true
+                IsDirectory = true,
+                ImageSource = GetFolderThumbnail(folder.Path)
             });
         }
     }
@@ -77,14 +105,30 @@ public sealed partial class NewPage : Page
         foreach (var item in PendingItems)
         {
             if (item.IsDirectory)
-                writer.AddDirectory(item.Path, item.Path);
+                writer.AddDirectory(item.Path, Path.GetFileName(item.Path));
             else
-                writer.AddFile(item.Path, new FileMetadata { MimeType ="image/jpg" });
+                writer.AddFile(item.Path, new FileMetadata
+                {
+                    MimeType = MimeHelper.GetMimeType(item.Path)
+                });
         }
 
         await writer.WriteAsync();
 
         PendingItems.Clear();
+        this.Frame.Navigate(typeof(MainPage));
     }
+
+    // Add Override Support (IMPORTANT)
+    //public void AddFileSmart(string path, string? mimeOverride = null)
+    //{
+    //    var mime = mimeOverride ?? MimeHelper.GetMimeType(path);
+
+    //    writer.AddFile(path, new FileMetadata
+    //    {
+    //        MimeType = mime
+    //    });
+    //}
+
 
 }

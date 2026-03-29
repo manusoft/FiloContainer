@@ -6,6 +6,7 @@
     xmlns:local="using:FiloExplorer.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:FiloExplorer.Models"
     mc:Ignorable="d">
 
     <Grid>
@@ -26,8 +27,11 @@
             <SplitView.Content>
                 <ListView x:Name="PendingList">
                     <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Path}"/>
+                        <DataTemplate x:DataType="models:PendingItem">
+                            <StackPanel Orientation="Horizontal" Padding="8">
+                                <Image Source="{Binding ImageSource}" Width="32" Height="32" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

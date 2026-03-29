@@ -5,20 +5,51 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:FiloExplorer.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:model="using:FiloExplorer.Models"
     mc:Ignorable="d">
 
-    <StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <Button Content="Back" Click="Back_Click"/>
+        <!-- Breadcrumb -->
+        <BreadcrumbBar x:Name="BreadcrumbBar" />
 
-        <ListView x:Name="FileList" DoubleTapped="FileList_DoubleTapped">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Name}"/>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="3*"/>
+            </Grid.ColumnDefinitions>
 
-    </StackPanel>
+            <!-- File List -->
+            <ListView x:Name="FileList"
+                  IsItemClickEnabled="True"
+                  ItemClick="FileList_ItemClick">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="model:ContainerItem">
+                        <Grid Padding="8" ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="30"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+
+                            <SymbolIcon Grid.Column="0" Symbol="{x:Bind FontIcon}" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind Name}"/>
+                            <TextBlock Grid.Column="2" Text="{x:Bind DisplaySize}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Preview Panel -->
+            <Grid Grid.Column="1">
+                <Image x:Name="PreviewImage" Stretch="Uniform"/>
+                <MediaPlayerElement x:Name="MediaPlayer" />
+            </Grid>
+        </Grid>
+    </Grid>
 </Page>
