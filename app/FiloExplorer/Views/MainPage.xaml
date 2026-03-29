@@ -8,33 +8,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" Background="Transparent">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+    <StackPanel Spacing="20" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-        <CommandBar HorizontalAlignment="Left" DefaultLabelPosition="Right" >
-            <AppBarButton Icon="Save" Label="Save" ToolTipService.ToolTip="Save Filo Container"/>
-            <AppBarSeparator />
-            <AppBarButton Icon="Document" Label="Add File" ToolTipService.ToolTip="Add Files"/>
-            <AppBarButton Icon="Folder" Label="Add Folder" ToolTipService.ToolTip="Add Folders"/>
-            <AppBarSeparator />
-        </CommandBar>
+        <TextBlock Text="FILO Container App" FontSize="28" FontWeight="Bold"/>
 
-        <SplitView Grid.Row="1" DisplayMode="Inline" IsPaneOpen="True" PanePlacement="Right" PaneBackground="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <SplitView.Content>
-                <Grid>
-                    <TextBlock Text="CONTENT" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Grid>
-            </SplitView.Content>
-            <SplitView.Pane>
-                <Grid Background="{StaticResource AcrylicBackgroundFillColorBaseBrush}">
-                    <TextBlock Text="PANE" />
-                </Grid>
-            </SplitView.Pane>
-        </SplitView>
-        
-       
-    </Grid>
+        <Button Content="Create New Container" Click="New_Click" Width="250"/>
+        <Button Content="Open Container" Click="Open_Click" Width="250"/>
+
+    </StackPanel>    
 </Page>

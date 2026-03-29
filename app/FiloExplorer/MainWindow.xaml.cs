@@ -11,7 +11,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        //RootFrame.Navigate(typeof(MainPage));
+        RootFrame.Navigate(typeof(MainPage));
 
         AppWindow.TitleBar.PreferredTheme = Microsoft.UI.Windowing.TitleBarTheme.Dark;
 
