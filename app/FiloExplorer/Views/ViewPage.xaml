@@ -12,44 +12,128 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Breadcrumb -->
             <RowDefinition Height="*"/>
+            <!-- Main Content -->
         </Grid.RowDefinitions>
 
+        <!-- Top CommandBar -->
+        <CommandBar Grid.Row="0" DefaultLabelPosition="Right">
+            <CommandBar.PrimaryCommands>
+                <AppBarButton Icon="Up" Label="Up" Click="UpButton_Click" />
+                <AppBarSeparator/>
+                <AppBarButton Icon="Save" Label="Extract" Click="ExtractButton_Click"/>
+                <AppBarButton Icon="SaveLocal" Label="Extract All" Click="ExtractAllButton_Click"/>
+                <AppBarSeparator/>
+                <AppBarButton Icon="Refresh" Label="Refresh" Click="RefreshButton_Click"/>
+            </CommandBar.PrimaryCommands>
+
+            <CommandBar.Content>
+                <TextBlock Text="Filo Archive Viewer" 
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           Margin="12,0,0,0" VerticalAlignment="Center"/>
+            </CommandBar.Content>
+        </CommandBar>
+
         <!-- Breadcrumb -->
-        <BreadcrumbBar x:Name="BreadcrumbBar" />
+        <BreadcrumbBar x:Name="BreadcrumbBar" 
+                       Grid.Row="1"
+                       Margin="12,8,12,8"
+                       ItemClicked="BreadcrumbBar_ItemClicked"/>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="3*"/>
-            </Grid.ColumnDefinitions>
+        <!-- Main Content with SplitView -->
+        <SplitView x:Name="MainSplitView"
+                   Grid.Row="2"
+                   DisplayMode="Inline"
+                   IsPaneOpen="True"
+                   OpenPaneLength="420"
+                   PaneBackground="{ThemeResource LayerFillColorDefaultBrush}">
 
-            <!-- File List -->
-            <ListView x:Name="FileList"
-                  IsItemClickEnabled="True"
-                  ItemClick="FileList_ItemClick">
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="model:ContainerItem">
-                        <Grid Padding="8" ColumnSpacing="10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="30"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
+            <!-- File List Pane -->
+            <SplitView.Pane>
+                <Grid>
+                    <ListView x:Name="FileList"
+                              IsItemClickEnabled="True"
+                              ItemClick="FileList_ItemClick"
+                              SelectionMode="Single"
+                              Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="model:ContainerItem">
+                                <Grid Padding="8" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                            <SymbolIcon Grid.Column="0" Symbol="{x:Bind FontIcon}" />
-                            <TextBlock Grid.Column="1" Text="{x:Bind Name}"/>
-                            <TextBlock Grid.Column="2" Text="{x:Bind DisplaySize}"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                                    <SymbolIcon Grid.Column="0" 
+                                                Symbol="{x:Bind IconSymbol, Mode=OneWay}" 
+                                                Foreground="{x:Bind IconColor, Mode=OneWay}"/>
 
-            <!-- Preview Panel -->
-            <Grid Grid.Column="1">
-                <Image x:Name="PreviewImage" Stretch="Uniform"/>
-                <MediaPlayerElement x:Name="MediaPlayer" />
-            </Grid>
-        </Grid>
+                                    <TextBlock Grid.Column="1" 
+                                               Text="{x:Bind Name}" 
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <TextBlock Grid.Column="2" 
+                                               Text="{x:Bind DisplaySize}" 
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="12,0,0,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </SplitView.Pane>
+
+            <!-- Preview Pane -->
+            <SplitView.Content>
+                <Grid Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Preview Header -->
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,12">
+                        <TextBlock x:Name="PreviewHeaderText"
+                                   Text="Preview"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                    </Border>
+
+                    <!-- Preview Content -->
+                    <Grid Grid.Row="1" x:Name="PreviewContent">
+                        <Image x:Name="PreviewImage" 
+                               Stretch="Uniform"
+                               Margin="20"
+                               Visibility="Collapsed"/>
+
+                        <MediaPlayerElement x:Name="MediaPlayerElement" 
+                                            AreTransportControlsEnabled="True"
+                                            Visibility="Collapsed"
+                                            Margin="12"/>
+
+                        <!-- Placeholder when nothing is selected -->
+                        <StackPanel x:Name="NoPreviewPanel"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Visibility="Visible">
+                            <SymbolIcon Symbol="Preview" 
+                                        Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
+                            <TextBlock Text="Select a file to preview" 
+                                       Margin="0,16,0,0"
+                                       Style="{ThemeResource BodyTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </SplitView.Content>
+        </SplitView>
     </Grid>
 </Page>

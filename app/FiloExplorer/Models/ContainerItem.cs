@@ -1,5 +1,6 @@
 ﻿using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 
 namespace FiloExplorer.Models;
 
@@ -13,7 +14,8 @@ public class ContainerItem
     public bool Encrypted { get; set; }
 
     public string DisplaySize => IsFolder ? "" : FormatSize(Size);
-    public Symbol FontIcon => IsFolder ? Symbol.Folder : Symbol.Document;
+    public Symbol IconSymbol => IsFolder ? Symbol.Folder : Symbol.Document;
+    public Brush IconColor => IsFolder ? new SolidColorBrush(Color.FromArgb(255, 255, 193, 7)) : new SolidColorBrush(Color.FromArgb(255, 0, 120, 215));
 
     private string FormatSize(long size)
     {
