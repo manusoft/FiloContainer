@@ -1,6 +1,4 @@
-﻿using FiloExplorer.Services;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppNotifications;
 using System;
 
@@ -22,10 +20,6 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-
-        var services = new ServiceCollection();
-        services.AddSingleton<INotificationService, NotificationService>();
-        Services = services.BuildServiceProvider();
     }
 
     /// <summary>

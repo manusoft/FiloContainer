@@ -1,5 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 using System;
 using System.Threading.Tasks;
 
@@ -71,5 +73,15 @@ public static class MsgHelper
 
         var result = await dialog.ShowAsync();
         return result == ContentDialogResult.Primary ? passwordBox.Password?.Trim() : null;
+    }
+
+    public static void ShowToast(string title, string message)
+    {
+        var content = new AppNotificationBuilder()
+            .AddText(title)
+            .AddText(message)
+            .BuildNotification();
+
+        AppNotificationManager.Default.Show(content);
     }
 }

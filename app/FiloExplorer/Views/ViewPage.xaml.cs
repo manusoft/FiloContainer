@@ -1,7 +1,5 @@
 using FiloExplorer.Models;
-using FiloExplorer.Services;
 using ManuHub.Filo;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -24,7 +22,7 @@ namespace FiloExplorer.Views;
 /// </summary>
 public sealed partial class ViewPage : Page
 {
-    private readonly INotificationService? _notification;
+    //private readonly INotificationService? _notification;
     private FiloReader? _reader;
     private readonly List<FiloFileInfo> _allFiles = new();
     private readonly ObservableCollection<ContainerItem> _items = new();
@@ -38,7 +36,7 @@ public sealed partial class ViewPage : Page
     {
         InitializeComponent();
         FileList.ItemsSource = _items;
-        _notification = App.Services.GetService<INotificationService>();
+        //_notification = App.Services.GetService<INotificationService>();
 
         this.Loaded += ViewPage_Loaded;
     }
@@ -79,7 +77,7 @@ public sealed partial class ViewPage : Page
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    _notification?.Show("Operation Cancelled", "Password is required for this encrypted container.");
+                    ShowToast("Operation Cancelled", "Password is required for this encrypted container.");
                     // await ShowMessageDialogAsync("Operation Cancelled", "Password is required for this encrypted container.", this.XamlRoot);
                     Frame.GoBack();
                     return;
@@ -105,7 +103,7 @@ public sealed partial class ViewPage : Page
         }
         catch (Exception ex)
         {
-            _notification?.Show("Failed to Open Container", ex.Message);
+            ShowToast("Failed to Open Container", ex.Message);
             //await ShowMessageDialogAsync("Failed to Open Container", ex.Message, this.XamlRoot);
             Frame.GoBack();
         }
@@ -266,7 +264,7 @@ public sealed partial class ViewPage : Page
     {
         if (FileList.SelectedItem is not ContainerItem item || item.IsFolder)
         {
-            _notification.Show("No file selected", "Please select a file to extract.");
+            ShowToast("No file selected", "Please select a file to extract.");
             return;
         }
 
@@ -288,7 +286,7 @@ public sealed partial class ViewPage : Page
     {
         if (_items.Count == 0)
         {
-            _notification.Show("Nothing to extract", "There are no files or folders in the current view to extract.");
+            ShowToast("Nothing to extract", "There are no files or folders in the current view to extract.");
             return;
         }
 
