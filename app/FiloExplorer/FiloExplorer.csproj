@@ -83,7 +83,7 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-    <PackageCertificateThumbprint>68201C259D25B9689EEFC15527F8353EB2FABDAB</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>01ABAD0860577FBCDFD634C13DB67FAAA6AF155A</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
 </Project>

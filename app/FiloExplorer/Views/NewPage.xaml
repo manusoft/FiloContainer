@@ -51,7 +51,7 @@
             </CommandBar.PrimaryCommands>
 
             <CommandBar.Content>
-                <TextBlock Text="Create New Filo container" 
+                <TextBlock Text="Create Filo" 
                            Style="{ThemeResource TitleTextBlockStyle}"
                            Margin="16,0,0,0"
                            VerticalAlignment="Center"/>

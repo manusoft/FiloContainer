@@ -13,9 +13,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Toolbar -->
-            <RowDefinition Height="Auto"/>
-            <!-- Breadcrumb -->
             <RowDefinition Height="*"/>
+            <!-- Breadcrumb -->
+            <RowDefinition Height="Auto"/>
             <!-- Main Content -->
         </Grid.RowDefinitions>
 
@@ -27,7 +27,7 @@
                               ToolTipService.ToolTip="Go back"
                               Click="BackButton_Click"/>
                 <AppBarSeparator/>
-                <AppBarButton Icon="Up" Label="Up" Click="UpButton_Click" />
+                <AppBarButton x:Name="AppBarButtonUp" Icon="Up" Label="Up" Click="UpButton_Click" />
                 <AppBarSeparator/>
                 <AppBarButton Icon="Save" Label="Extract" Click="ExtractButton_Click"/>
                 <AppBarButton Icon="SaveLocal" Label="Extract All" Click="ExtractAllButton_Click"/>
@@ -36,21 +36,15 @@
             </CommandBar.PrimaryCommands>
 
             <CommandBar.Content>
-                <TextBlock Text="Filo Container Viewer" 
+                <TextBlock Text="Filo View" 
                            Style="{ThemeResource TitleTextBlockStyle}"
                            Margin="12,0,0,0" VerticalAlignment="Center"/>
             </CommandBar.Content>
         </CommandBar>
 
-        <!-- Breadcrumb -->
-        <BreadcrumbBar x:Name="BreadcrumbBar" 
-                       Grid.Row="1"
-                       Margin="12,8,12,8"
-                       ItemClicked="BreadcrumbBar_ItemClicked"/>
-
         <!-- Main Content with SplitView -->
         <SplitView x:Name="MainSplitView"
-                   Grid.Row="2"
+                   Grid.Row="1"
                    DisplayMode="Inline"
                    IsPaneOpen="True"
                    OpenPaneLength="420"
@@ -140,5 +134,11 @@
                 </Grid>
             </SplitView.Content>
         </SplitView>
+
+        <!-- Breadcrumb -->
+        <BreadcrumbBar x:Name="BreadcrumbBar" 
+                       Grid.Row="2"
+                       Margin="12,8,12,8"
+                       ItemClicked="BreadcrumbBar_ItemClicked"/>
     </Grid>
 </Page>

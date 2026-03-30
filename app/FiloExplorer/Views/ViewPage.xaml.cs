@@ -8,6 +8,7 @@ using Microsoft.Windows.Storage.Pickers;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ public sealed partial class ViewPage : Page
     {
         InitializeComponent();
         FileList.ItemsSource = _items;
-        //_notification = App.Services.GetService<INotificationService>();
+        BreadcrumbBar.ItemsSource = BreadcrumbItems;
 
         this.Loaded += ViewPage_Loaded;
     }
@@ -160,6 +161,7 @@ public sealed partial class ViewPage : Page
         BreadcrumbItems.Clear();
 
         BreadcrumbItems.Add("Home");
+        AppBarButtonUp.IsEnabled = false;
 
         if (string.IsNullOrEmpty(_currentFolder))
             return;
@@ -176,6 +178,11 @@ public sealed partial class ViewPage : Page
 
             BreadcrumbItems.Add(part);
         }
+
+        if (BreadcrumbItems.Count == 1)
+            AppBarButtonUp.IsEnabled = false;
+        else
+            AppBarButtonUp.IsEnabled = true;
     }
 
     private async void FileList_ItemClick(object sender, ItemClickEventArgs e)
@@ -341,6 +348,7 @@ public sealed partial class ViewPage : Page
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshView();
+        UpdateBreadcrumb();
     }
 
     private async void BackButton_Click(object sender, RoutedEventArgs e)
