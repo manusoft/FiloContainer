@@ -1,8 +1,9 @@
 using FiloExplorer.Models;
+using FiloExplorer.Services;
 using ManuHub.Filo;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.Windows.Storage.Pickers;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Windows.Media.Core;
 using Windows.Storage.Streams;
+using static FiloExplorer.Helpers.MsgHelper;
 
 namespace FiloExplorer.Views;
 
@@ -22,7 +24,8 @@ namespace FiloExplorer.Views;
 /// </summary>
 public sealed partial class ViewPage : Page
 {
-    private FiloReader _reader;
+    private readonly INotificationService? _notification;
+    private FiloReader? _reader;
     private readonly List<FiloFileInfo> _allFiles = new();
     private readonly ObservableCollection<ContainerItem> _items = new();
     private string _currentFolder = "";
@@ -35,6 +38,7 @@ public sealed partial class ViewPage : Page
     {
         InitializeComponent();
         FileList.ItemsSource = _items;
+        _notification = App.Services.GetService<INotificationService>();
 
         this.Loaded += ViewPage_Loaded;
     }
@@ -71,24 +75,17 @@ public sealed partial class ViewPage : Page
             // === Password Handling for Filo 1.1.0 ===
             if (_reader.Header.Encryption == "AES256")
             {
-                string? password = await PromptForPasswordAsync();
+                string? password = await ShowPasswordDialogAsync(this.XamlRoot);
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    await ShowMessageAsync("Operation Cancelled", "Password is required for this encrypted archive.");
+                    _notification?.Show("Operation Cancelled", "Password is required for this encrypted container.");
+                    // await ShowMessageDialogAsync("Operation Cancelled", "Password is required for this encrypted container.", this.XamlRoot);
                     Frame.GoBack();
                     return;
                 }
 
-                _key = _reader.DeriveKey(password);
-
-                // Basic validation (Filo 1.1.0 style)
-                if (!await ValidatePasswordAsync())
-                {
-                    await ShowMessageAsync("Invalid Password", "The password entered is incorrect.");
-                    Frame.GoBack();
-                    return;
-                }
+                _key = _reader.DeriveKey(password); // If password is wrong, exception will be thrown Invakid Password
             }
             else
             {
@@ -104,92 +101,17 @@ public sealed partial class ViewPage : Page
 
             // Optional: Show encryption status in UI
             if (_key != null)
-                PreviewHeaderText.Text = "Preview (Encrypted Archive)";
+                PreviewHeaderText.Text = "Preview (Encrypted Container)";
         }
         catch (Exception ex)
         {
-            await ShowErrorAsync("Failed to Open Archive", ex.Message);
+            _notification?.Show("Failed to Open Container", ex.Message);
+            //await ShowMessageDialogAsync("Failed to Open Container", ex.Message, this.XamlRoot);
             Frame.GoBack();
         }
     }
 
-    private async Task<string?> PromptForPasswordAsync()
-    {
-        var passwordBox = new PasswordBox
-        {
-            PlaceholderText = "Enter archive password",
-            Width = 320,
-            Margin = new Thickness(0, 12, 0, 0)
-        };
-
-        var content = new StackPanel
-        {
-            Spacing = 8,
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = "This archive is encrypted with AES-256.\nPlease enter the correct password to unlock it.",
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 8)
-                },
-                passwordBox
-            }
-        };
-
-        var dialog = new ContentDialog
-        {
-            Title = "Encrypted Filo Archive",
-            Content = content,
-            PrimaryButtonText = "Unlock",
-            SecondaryButtonText = "Cancel",
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = this.XamlRoot
-        };
-
-        var result = await dialog.ShowAsync();
-        return result == ContentDialogResult.Primary ? passwordBox.Password?.Trim() : null;
-    }
-
-    private async Task<bool> ValidatePasswordAsync()
-    {
-        try
-        {
-            // Simple but effective for Filo 1.1.0
-            var testFiles = _reader!.ListFiles();
-            return testFiles.Count > 0;   // If no exception → password is good
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private async Task ShowErrorAsync(string title, string message)
-    {
-        var dialog = new ContentDialog
-        {
-            Title = title,
-            Content = message,
-            CloseButtonText = "OK",
-            XamlRoot = this.XamlRoot
-        };
-        await dialog.ShowAsync();
-    }
-
-    private async Task ShowMessageAsync(string title, string message)
-    {
-        var dialog = new ContentDialog
-        {
-            Title = title,
-            Content = message,
-            CloseButtonText = "OK",
-            XamlRoot = this.XamlRoot
-        };
-        await dialog.ShowAsync();
-    }
-
-    void RefreshView()
+    private void RefreshView()
     {
         _items.Clear();
         var folders = new HashSet<string>();
@@ -344,22 +266,57 @@ public sealed partial class ViewPage : Page
     {
         if (FileList.SelectedItem is not ContainerItem item || item.IsFolder)
         {
-            // Show message: select a file
+            _notification.Show("No file selected", "Please select a file to extract.");
             return;
         }
 
         var folderPicker = new FolderPicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
         var folder = await folderPicker.PickSingleFolderAsync();
-        if (folder != null)
+        if (folder == null) return;
+
+        try
         {
-            await _reader.ExtractFileAsync(item.FullPath, folder.Path, _key);
-            // Show success notification
+            var itemPath = Path.Combine(folder.Path, item.FullPath);
+            await _reader.ExtractFileAsync(item.FullPath, itemPath, _key);
+        }
+        catch (Exception ex)
+        {
         }
     }
 
     private async void ExtractAllButton_Click(object sender, RoutedEventArgs e)
     {
-        // Similar to above but extract all files
+        if (_items.Count == 0)
+        {
+            _notification.Show("Nothing to extract", "There are no files or folders in the current view to extract.");
+            return;
+        }
+
+        var folderPicker = new FolderPicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
+        var folder = await folderPicker.PickSingleFolderAsync();
+        if (folder == null) return;
+
+        foreach (var item in _items)
+        {
+            if (item.IsFolder)
+            {
+                try
+                {
+                    await _reader.ExtractDirectoryAsync(item.FullPath, Path.Combine(folder.Path, item.Name), _key);
+                }
+                catch (Exception ex)
+                { }
+            }
+            else
+            {
+                try
+                {
+                    await _reader.ExtractFileAsync(item.FullPath, Path.Combine(folder.Path, item.Name), _key);
+                }
+                catch (Exception ex)
+                { }
+            }
+        }
     }
 
     private void BreadcrumbBar_ItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
@@ -388,12 +345,16 @@ public sealed partial class ViewPage : Page
         RefreshView();
     }
 
-    private void BackButton_Click(object sender, RoutedEventArgs e)
+    private async void BackButton_Click(object sender, RoutedEventArgs e)
     {
+        // going back without confirmation is a bad idea, not unsaved changes, navigate to main page
+        var result = await ShowConfirmationDialogAsync("Go Back", "Are you sure you want to go back to home page?", this.XamlRoot);
+        if (!result) return;
+
         if (Frame.CanGoBack)
         {
             PreviewImage.Source = null;
-            MediaPlayerElement.Source = null;            
+            MediaPlayerElement.Source = null;
             Frame.GoBack();
         }
     }

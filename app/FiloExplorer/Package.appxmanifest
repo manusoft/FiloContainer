@@ -6,7 +6,8 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:systemai="http://schemas.microsoft.com/appx/manifest/systemai/windows10"
-  IgnorableNamespaces="uap rescap systemai">
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  IgnorableNamespaces="uap rescap systemai com">
 
   <Identity
     Name="FiloExplorer"
@@ -35,14 +36,25 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="FiloExplorer"
-        Description="FiloExplorer"
+        DisplayName="Filo Explorer"
+        Description="Fast, Flexible, Multi-file Container"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+		<Extensions>
+			<!-- Register COM CLSID -->
+			<com:Extension Category="windows.comServer">
+				<com:ComServer>
+					<com:ExeServer Executable="FiloExplorer\FiloExplorer.exe" DisplayName="$targetnametoken$" Arguments="----AppNotificationActivated:">
+						<!-- Example path to executable: CommunityToolkit.Maui.Sample\CommunityToolkit.Maui.Sample.exe -->
+						<com:Class Id="6e919706-2634-4d97-a93c-2213b2acc444" />
+					</com:ExeServer>
+				</com:ComServer>
+			</com:Extension>
+		</Extensions>
     </Application>
   </Applications>
 

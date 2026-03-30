@@ -27,7 +27,7 @@
                       Click="BackButton_Click"/>
                 <AppBarSeparator />
                 <AppBarButton Icon="Save" 
-                              Label="Create Archive" 
+                              Label="Create container" 
                               ToolTipService.ToolTip="Save as .filo container"
                               Click="Create_Click"/>
                 <AppBarSeparator />
@@ -51,7 +51,7 @@
             </CommandBar.PrimaryCommands>
 
             <CommandBar.Content>
-                <TextBlock Text="Create New Filo Archive" 
+                <TextBlock Text="Create New Filo container" 
                            Style="{ThemeResource TitleTextBlockStyle}"
                            Margin="16,0,0,0"
                            VerticalAlignment="Center"/>
@@ -144,7 +144,7 @@
                       Padding="20">
                     <StackPanel Spacing="20">
                         <!-- Header -->
-                        <TextBlock Text="Archive Settings" 
+                        <TextBlock Text="Container Settings" 
                        Style="{ThemeResource SubtitleTextBlockStyle}" 
                        FontWeight="SemiBold"/>
 
@@ -153,7 +153,7 @@
                             <TextBlock Text="Output File" 
                                        FontWeight="SemiBold"/>
                             <TextBlock x:Name="OutputPathText" 
-                                       Text="NewArchive.filo" 
+                                       Text="NewContainer.filo" 
                                        TextWrapping="WrapWholeWords"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
@@ -205,7 +205,7 @@
                         </StackPanel>
 
                         <!-- Create Button (Big & Prominent) -->
-                        <Button Content="Create Filo Archive" 
+                        <Button Content="Create Filo Container" 
                                 Style="{StaticResource AccentButtonStyle}"
                                 HorizontalAlignment="Stretch"
                                 Margin="0,20,0,0"

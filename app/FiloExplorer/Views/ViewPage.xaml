@@ -36,7 +36,7 @@
             </CommandBar.PrimaryCommands>
 
             <CommandBar.Content>
-                <TextBlock Text="Filo Archive Viewer" 
+                <TextBlock Text="Filo Container Viewer" 
                            Style="{ThemeResource TitleTextBlockStyle}"
                            Margin="12,0,0,0" VerticalAlignment="Center"/>
             </CommandBar.Content>

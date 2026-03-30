@@ -15,6 +15,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Remove="Assets\folder.png" />
+    <Content Remove="Assets\iconfilo.png" />
+    <Content Remove="Assets\Remove text from lay.png" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Views\HelpPage.xaml" />
@@ -42,9 +44,10 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.TabbedCommandBar" Version="8.2.251219" />
     <PackageReference Include="Filo" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
   </ItemGroup>
@@ -82,7 +85,7 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-    <PackageCertificateThumbprint>01ABAD0860577FBCDFD634C13DB67FAAA6AF155A</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>68201C259D25B9689EEFC15527F8353EB2FABDAB</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
 </Project>

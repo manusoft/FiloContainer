@@ -58,7 +58,7 @@
                                        FontSize="20" 
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center"/>
-                            <TextBlock Text="Build a new encrypted .filo archive from files and folders" 
+                            <TextBlock Text="Build a new encrypted .filo container from files and folders" 
                                        TextAlignment="Center"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"/>
@@ -79,7 +79,7 @@
                                        FontSize="20" 
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center"/>
-                            <TextBlock Text="View, preview, and extract files from an existing .filo archive" 
+                            <TextBlock Text="View, preview, and extract files from an existing .filo container" 
                                        TextAlignment="Center"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"/>

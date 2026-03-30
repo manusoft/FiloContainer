@@ -11,6 +11,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
+using static FiloExplorer.Helpers.MsgHelper;
 
 namespace FiloExplorer.Views;
 
@@ -58,6 +59,7 @@ public sealed partial class NewPage : Page
                 Path = file.Path,
                 //Name = file.DisplayName + file.FileType,
                 IsDirectory = false,
+                
                 Thumbnail = await GetFileThumbnailAsync(file.Path)
             };
 
@@ -117,12 +119,12 @@ public sealed partial class NewPage : Page
         }
     }
 
-    // ====================== Create Archive ======================
+    // ====================== Create Container ======================
     private async void Create_Click(object sender, RoutedEventArgs e)
     {
         if (_pendingItems.Count == 0)
         {
-            await ShowMessageAsync("No items", "Please add at least one file or folder.");
+            await ShowMessageDialogAsync("No items", "Please add at least one file or folder.", this.XamlRoot);
             return;
         }
 
@@ -133,8 +135,8 @@ public sealed partial class NewPage : Page
             // Choose output path first (better UX)
             var picker = new FileSavePicker(this.XamlRoot.ContentIslandEnvironment.AppWindowId);
             picker.DefaultFileExtension = ".filo";
-            picker.FileTypeChoices.Add("Filo Archive", new[] { ".filo" });
-            picker.SuggestedFileName = "NewArchive.filo";
+            picker.FileTypeChoices.Add("Filo Container", new[] { ".filo" });
+            picker.SuggestedFileName = "NewContainer.filo";
             picker.CommitButtonText = "Save Filo";
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             picker.SuggestedFolder = "";
@@ -170,14 +172,14 @@ public sealed partial class NewPage : Page
 
             await writer.WriteAsync();
 
-            await ShowMessageAsync("Success", $"Filo archive created successfully!\n\n{file.Path}");
+            await ShowMessageDialogAsync("Success", $"Filo container created successfully!\n\n{file.Path}", this.XamlRoot);
 
             _pendingItems.Clear();
             Frame.GoBack();
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync("Error", $"Failed to create archive:\n{ex.Message}");
+            await ShowMessageDialogAsync("Error", $"Failed to create container:\n{ex.Message}", this.XamlRoot);
         }
     }
 
@@ -195,21 +197,16 @@ public sealed partial class NewPage : Page
         _pendingItems.Clear();
     }
 
-    private async Task ShowMessageAsync(string title, string message)
+
+
+    private async void BackButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
+        if (_pendingItems.Count > 0)
         {
-            Title = title,
-            Content = message,
-            CloseButtonText = "OK",
-            XamlRoot = this.XamlRoot
-        };
+            var result = await ShowConfirmationDialogAsync("Unsaved Changes", "You have pending items. Are you sure you want to go back and lose these changes?", this.XamlRoot);
+            if (!result) return;
+        }
 
-        await dialog.ShowAsync();
-    }
-
-    private void BackButton_Click(object sender, RoutedEventArgs e)
-    {
         if (Frame.CanGoBack)
             Frame.GoBack();
     }

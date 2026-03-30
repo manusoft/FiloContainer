@@ -63,7 +63,7 @@
                             <StackPanel Spacing="16">
                                 <FontIcon Glyph="&#xE710;" FontSize="36" 
                                           Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
-                                <TextBlock Text="Create Secure Archives" FontWeight="SemiBold" FontSize="18"/>
+                                <TextBlock Text="Create Secure Container" FontWeight="SemiBold" FontSize="18"/>
                                 <TextBlock Text="Using FiloWriter with AES-256 encryption support. Add individual files or entire folders recursively. Optional password protection via WithPassword()." 
                                            TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -99,14 +99,14 @@
 
                         <StackPanel Spacing="12">
                             <TextBlock Text="1. Creating a New Container" FontWeight="SemiBold"/>
-                            <TextBlock Text="• Click 'Create Filo Container' from the main menu or home screen&#x0a;• Add files and folders&#x0a;• Optionally set a password in the right pane&#x0a;• Click 'Create Filo Archive'" 
+                            <TextBlock Text="• Click 'Create Filo Container' from the main menu or home screen&#x0a;• Add files and folders&#x0a;• Optionally set a password in the right pane&#x0a;• Click 'Create Filo container'" 
                                        TextWrapping="Wrap" 
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
 
                         <StackPanel Spacing="12" Grid.Row="1">
                             <TextBlock Text="2. Opening and Viewing" FontWeight="SemiBold"/>
-                            <TextBlock Text="• Click 'Open Filo Container'&#x0a;• Select a .filo file&#x0a;• Enter password if the archive is encrypted (AES256 header)&#x0a;• Browse folders and preview files directly" 
+                            <TextBlock Text="• Click 'Open Filo Container'&#x0a;• Select a .filo file&#x0a;• Enter password if the container is encrypted (AES256 header)&#x0a;• Browse folders and preview files directly" 
                                        TextWrapping="Wrap" 
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
@@ -203,7 +203,7 @@
                         Padding="24" CornerRadius="8">
                     <StackPanel Spacing="8">
                         <TextBlock Text="About Filo 1.1.0" FontWeight="SemiBold"/>
-                        <TextBlock Text="Filo is a lightweight, high-performance archive format with built-in AES-256 encryption support. FiloReader and FiloWriter provide simple and secure APIs for working with .filo containers."
+                        <TextBlock Text="Filo is a lightweight, high-performance container format with built-in AES-256 encryption support. FiloReader and FiloWriter provide simple and secure APIs for working with .filo containers."
                                    TextWrapping="Wrap"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
