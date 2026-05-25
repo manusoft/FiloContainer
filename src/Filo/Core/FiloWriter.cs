@@ -1,4 +1,5 @@
-﻿using ManuHub.Filo.Utils;
+﻿using ManuHub.Filo.Shared;
+using ManuHub.Filo.Utils;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -145,7 +146,7 @@ public class FiloWriter
 
                     while ((read = await fs.ReadAsync(buffer)) > 0)
                     {
-                        var offset = output.Position;
+                        var chunkStartOffset = output.Position;
                         byte[] chunk = buffer[..read];
 
                         string hash = Convert.ToHexString(SHA256.HashData(chunk));
@@ -162,8 +163,8 @@ public class FiloWriter
                             entry.Chunks.Add(new FiloChunkIndex
                             {
                                 Id = chunkId++,
-                                Offset = offset,
-                                Length = encrypted.Length,
+                                Offset = chunkStartOffset,
+                                Length = FiloConstants.IvSize + FiloConstants.LengthSize + encrypted.Length,
                                 Hash = hash
                             });
                         }
@@ -175,8 +176,8 @@ public class FiloWriter
                             entry.Chunks.Add(new FiloChunkIndex
                             {
                                 Id = chunkId++,
-                                Offset = offset,
-                                Length = read,
+                                Offset = chunkStartOffset,
+                                Length = FiloConstants.LengthSize + read,
                                 Hash = hash
                             });
                         }
