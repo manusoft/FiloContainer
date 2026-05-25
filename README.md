@@ -7,85 +7,93 @@
 
 <img width="512" height="512" alt="FILO" src="https://github.com/user-attachments/assets/d26100b0-2d96-480c-80b1-3e6501ebcd33" />
 
-## FILO v1.1 Highlights
+---
 
-**Added:**
+## FILO v1.2.0 Highlights
 
-* ✔ Chunk integrity hashing (SHA256)
-* ✔ Password-based encryption (PBKDF2)
+### 🧱 Stability & Format Fixes
+- ✔ Fixed footer structure (v1.2 deterministic format)
+- ✔ Standardized chunk format (encrypted + plain)
+- ✔ Fixed index offset validation issues
+- ✔ Added footer magic validation (`FLOF`)
+- ✔ Stronger container corruption detection
 
-**Deprecated:**
+### 🔐 Security Improvements
+- ✔ Password-based encryption (PBKDF2 + AES)
+- ✔ Encryption contract stabilized (AES-CBC defined)
+- ✔ Password verification via SHA256 check
+- ✔ Safer chunk validation during streaming
 
-* ⚠ `WithEncryption(byte[] key)` — use `WithPassword(string password)` instead.
+### ⚙️ Reliability Improvements
+- ✔ Safe offset & length validation
+- ✔ Stronger reader error handling
+- ✔ Deterministic file structure
 
 ---
 
 ## Overview
 
-**FILO** (Files In, Layered & Organized) is a modern **multi-file container format** for .NET designed for **large files**.
-It stores multiple files (video, audio, text, binaries, etc.) in a **single container**, supporting:
+**FILO** (Files In, Layered & Organized) is a modern multi-file container format for .NET designed for large-scale file storage and streaming.
 
-* **Large files** (GB-sized videos, audio, binaries)
-* **Multiple files per container**
-* **Chunked streaming** for memory-efficient reads
-* **AES256 optional encryption per chunk**
-* **Embedded metadata**
-* **File checksums** for integrity
-* Fully **async APIs**
+It supports:
 
-> FILO = **Files In, Layered & Organized** — ideal for **video/audio streaming, backups, and custom file packaging**.
+- Large files (GB-sized video/audio/binaries)
+- Multi-file containers
+- Chunked streaming (memory efficient)
+- Optional AES256 encryption per chunk
+- Embedded metadata & integrity checks
+- Fully async APIs
+
+> FILO is designed for **streaming-first storage systems**, not just archive compression.
 
 ---
 
 ## Why FILO?
 
-Traditional ZIP or JSON-based storage has limitations:
+Traditional formats like ZIP have limitations:
 
-- Limited streaming support for large files
-- No native chunked encryption
-- Metadata is often scattered or external
+- ❌ Poor streaming support
+- ❌ Weak chunk-level control
+- ❌ No streaming encryption model
+- ❌ Limited metadata structure
 
-**FILO solves this** by:
+FILO solves this by:
 
-- Storing files in **chunks** for streaming or partial reads  
-- Supporting **encryption at chunk level**  
-- Embedding **metadata and checksums**  
-- Providing **simple async APIs** in fluent style  
+- Streaming files in **chunks**
+- Encrypting **per chunk**
+- Embedding **structured metadata**
+- Supporting **direct streaming without extraction**
 
 ---
 
-## FILO Container Layout
+## FILO Container Layout (v1.2)
 
 ```text
 +------------------------------------------------+
-| Header (JSON)                                  |
-|  - Format: "FILO"                              |
-|  - Version                                     |
-|  - Created (UTC)                               |
-|  - ChunkSize                                   |
-|  - FileCount                                   |
-|  - Compression                                 |
-|  - Encryption                                  |
-|  - Description                                 |
+| HEADER (JSON)                                  |
+|------------------------------------------------|
+| - Format: FILO                                 |
+| - Version: 1.2                                 |
+| - ChunkSize                                    |
+| - FileCount                                    |
+| - Encryption Mode (AES-CBC)                    |
+| - KDF (PBKDF2)                                 |
 +------------------------------------------------+
-| File Chunks                                    |
-|  [chunk1] [chunk2] ...                         |
-|  (Encrypted if AES256)                         |
+| FILE CHUNKS                                    |
+|  [IV][LEN][DATA] (encrypted)                   |
+|  [LEN][DATA] (plain)                           |
 +------------------------------------------------+
-| Index (JSON)                                   |
-|  - File names                                  |
-|  - Offsets                                     |
-|  - Chunk sizes                                 |
+| INDEX (JSON)                                   |
 +------------------------------------------------+
-| Metadata (JSON)                                |
-|  - File metadata (MIME type, tags, etc.)       |
+| METADATA (JSON)                                |
 +------------------------------------------------+
-| Checksum (JSON)                                |
-|  - SHA256 hashes                               |
+| CHECKSUM (JSON)                                |
 +------------------------------------------------+
-| Footer                                         |
-|  - Index offset                                |
-|  - Metadata offset                             |
+| FOOTER                                         |
+| - IndexOffset                                  |
+| - MetadataOffset                               |
+| - ChecksumOffset                               |
+| - "FLOF" magic                                 |
 +------------------------------------------------+
 ```
 > This design allows **streaming large files directly**, without full extraction.
@@ -108,85 +116,101 @@ Traditional ZIP or JSON-based storage has limitations:
 
 ---
 
-
 ## Installation
 
 Install via NuGet:
 
 ```bash
-dotnet add package Filo --version 1.1.0
+dotnet add package Filo --version 1.2.0
 ````
 
 ---
 
 ## Basic Usage
 
-### Writing a container
+### 📦 Create Container
 
 ```csharp
 using Filo;
 
-var pwd = "mypassword";
-
 var writer = new FiloWriter("backup.filo")
     .AddFile("video.mp4", new FileMetadata { MimeType = "video/mp4" })
-    .AddFile("subtitle.srt", new FileMetadata { MimeType = "text/plain" })
+    .AddFile("audio.mp3", new FileMetadata { MimeType = "audio/mpeg" })
     .WithChunkSize(5_000_000)
-    .WithPassword(pwd);
+    .WithPassword("1234567890");
 
 await writer.WriteAsync();
+
 Console.WriteLine("FILO container created!");
 ```
 
-### Reading files
+### 📖 Read Container
 
 ```csharp
 var reader = new FiloReader("backup.filo");
 await reader.InitializeAsync();
 
-var key = reader.DeriveKey("mypassword");
+var key = reader.DeriveKey("1234567890");
 
-// List files
 foreach (var file in reader.ListFiles())
-    Console.WriteLine(file);
+{
+    Console.WriteLine($"{file.Name} ({file.FileSize} bytes)");
+}
+```
 
-// Stream chunks
+---
+### 📡 Stream File (Recommended)
+
+```csharp
+await using var stream = reader.OpenStream("video.mp4", key);
+await using var output = File.Create("restored.mp4");
+
+await stream.CopyToAsync(output);
+```
+
+---
+
+### 🔁 Chunk-by-chunk processing
+
+```csharp
 await foreach (var chunk in reader.StreamFileAsync("video.mp4", key))
 {
-    await chunk.WriteAsync(chunk);
+    // Process streaming data
 }
 ```
 
 ---
 
-### Direct Streaming
+### 🔐 Encryption Model (v1.2)
 
-```csharp
-using var stream = reader.OpenStream("video.mp4", key);
-await stream.CopyToAsync(outputFile);
-```
+- Encrypted chunk format:
+    ```
+    [16-byte IV][4-byte length][encrypted data]
+    ```
+- Plain chunk format:
+    ```
+    [4-byte length][plain data]
+    ```
 
-### Extract Files Using `FiloStream`
+* Key derived using PBKDF2 (100k iterations)
+* AES-CBC encryption per chunk
+* Password verification via SHA256 key hash
 
-```csharp
-using var filoStream = new FiloStream(reader, "video.mp4", key);
-using var output = File.Create("video_restored.mp4");
+---
 
-await filoStream.CopyToAsync(output);
-Console.WriteLine("File extracted!");
-```
+### 🧠 Integrity System
 
-### Load Image
+- Each chunk is validated using SHA256:
+    ```csharp
+    var checksum = await FiloChecksum.ComputeFileSHA256Async("video.mp4");
+    ```
 
-```csharp
-using var stream = new FiloStream(reader, "photo.jpg");
-using var image = System.Drawing.Image.FromStream(stream);
+* Prevents corrupted chunk playback
+* Ensures file integrity during streaming
 
-Console.WriteLine($"Loaded image: {image.Width}x{image.Height}");
+---
 
-```
-
-## Streaming Video/Audio in ASP.NET Core / Blazor
+### 🌐 ASP.NET Streaming Example
 
 ```csharp
 public async Task<IActionResult> GetVideo()
@@ -195,6 +219,7 @@ public async Task<IActionResult> GetVideo()
     await reader.InitializeAsync();
 
     var key = reader.DeriveKey("password");
+
     var stream = new FiloStream(reader, "movie.mp4", key);
 
     return File(stream, "video/mp4");
@@ -238,15 +263,27 @@ await foreach (var chunk in reader.StreamFileAsync("largevideo.mp4", key))
 
 ---
 
-## ⚡ When to Use FiloStream vs StreamFileAsync  
+## ⚡ When to Use What
 
-| Method            | Best For         |
-| ------------------| ---------------- |
-| StreamFileAsync() | chunk processing |
-| FiloStream normal | file streaming   |
-| CopyToAsync()	    | extraction       |
-| HTTP streaming	| media servers    |
+| Method              | Use Case                |
+| ------------------- | ----------------------- |
+| `OpenStream()`      | Direct file streaming   |
+| `FiloStream`        | ASP.NET / UI streaming  |
+| `StreamFileAsync()` | Custom chunk processing |
+| `CopyToAsync()`     | Extraction              |
 
+
+---
+
+### 📦 File Metadata
+
+```csharp
+new FileMetadata
+{
+    MimeType = "video/mp4",
+    Description = "Main movie file"
+}
+```
 ---
 
 > Always verify checksum for **large file integrity**.
@@ -275,17 +312,31 @@ Console.WriteLine(checksum);
 
 ---
 
-## Notes
+## 🔧 Core Classes
 
-* FILO supports **any file type**: video, audio, images, text, binaries
-* For **large containers (GBs)**, keep them **server-side** and stream with `FiloStream`.
-* Fully **async and memory-efficient**
+| Class          | Responsibility         |
+| -------------- | ---------------------- |
+| FiloWriter     | Builds container       |
+| FiloReader     | Reads container        |
+| FiloStream     | Streaming abstraction  |
+| FiloChecksum   | Integrity verification |
+| FiloEncryption | AES operations         |
+
+---
+
+
+## Notes (v1.2 Rules)
+
+* Footer size is fixed (28 bytes)
+* Chunk offsets always point to chunk start
+* AES-CBC is the defined encryption mode
+* Index must always validate against file length
+* Footer magic must be "FLOF"
 
 ---
 
 ## License
 
 MIT License
-
 
 
