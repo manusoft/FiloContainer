@@ -4,7 +4,7 @@
       "commandName": "MsixPackage"
     },
     "FiloExplorer (Unpackaged)": {
-      "commandName": "Project"
+      "commandName": "MsixPackage"
     }
   }
 }

@@ -9,10 +9,7 @@
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   IgnorableNamespaces="uap rescap systemai com">
 
-  <Identity
-    Name="FiloExplorer"
-    Publisher="CN=8F09EC4C-C217-4E2F-BC6D-865A31F7EE04"
-    Version="1.0.0.0" />
+  <Identity Name="FiloExplorer" Publisher="CN=8F09EC4C-C217-4E2F-BC6D-865A31F7EE04" Version="1.0.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="abc86f69-03e8-40f6-a574-2369d0d7c78c" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -32,9 +29,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="App"
-      Executable="$targetnametoken$.exe"
-      EntryPoint="$targetentrypoint$">
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="Filo Explorer"
         Description="Fast, Flexible, Multi-file Container"
