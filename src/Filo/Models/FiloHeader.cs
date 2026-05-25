@@ -14,6 +14,8 @@ public class FiloHeader
 
     public string Encryption { get; set; } = "none";
 
+    public string? EncryptionMode { get; set; } = "AES-CBC";
+
     public string? Kdf { get; set; } // v1.1
 
     public string? Salt { get; set; } // v1.1
