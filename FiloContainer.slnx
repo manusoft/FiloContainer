@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/app/">
+    <Project Path="app/FiloExplorer/FiloExplorer.csproj" Id="0865122a-f7f0-47d8-bf64-05f6426ae4fb">
+      <Platform Project="x64" />
+      <Deploy />
+    </Project>
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Filo/Filo.csproj" />
   </Folder>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="FiloExplorer.Views.NewPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FiloExplorer.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:FiloExplorer.Models"
+    mc:Ignorable="d">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
+            <RowDefinition Height="*"/>
+            <!-- Main Content -->
+        </Grid.RowDefinitions>
+
+        <!-- CommandBar -->
+        <CommandBar Grid.Row="0" DefaultLabelPosition="Right">
+            <CommandBar.PrimaryCommands>
+                <!-- Back Button -->
+                <AppBarButton Icon="Back" 
+                      Label="Back" 
+                      ToolTipService.ToolTip="Go back to home"
+                      Click="BackButton_Click"/>
+                <AppBarSeparator />
+                <AppBarButton Icon="Save" 
+                              Label="Create container" 
+                              ToolTipService.ToolTip="Save as .filo container"
+                              Click="Create_Click"/>
+                <AppBarSeparator />
+                <AppBarButton Icon="Add" 
+                              Label="Add Files" 
+                              ToolTipService.ToolTip="Add one or more files"
+                              Click="AddFile_Click"/>
+                <AppBarButton Icon="Folder" 
+                              Label="Add Folder" 
+                              ToolTipService.ToolTip="Add a folder recursively"
+                              Click="AddFolder_Click"/>
+                <AppBarSeparator />
+                <AppBarButton Icon="Delete" 
+                              Label="Remove" 
+                              ToolTipService.ToolTip="Remove selected item"
+                              Click="RemoveSelected_Click"/>
+                <AppBarButton Icon="Clear" 
+                              Label="Clear All" 
+                              ToolTipService.ToolTip="Clear all pending items"
+                              Click="ClearAll_Click"/>
+            </CommandBar.PrimaryCommands>
+
+            <CommandBar.Content>
+                <TextBlock Text="Create Filo" 
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           Margin="16,0,0,0"
+                           VerticalAlignment="Center"/>
+            </CommandBar.Content>
+        </CommandBar>
+
+        <!-- Main Content -->
+        <SplitView x:Name="MainSplitView"
+                   Grid.Row="1"
+                   DisplayMode="Inline"
+                   IsPaneOpen="True"
+                   OpenPaneLength="380"
+                   PanePlacement="Right">
+
+            <!-- Left: Pending Items List -->
+            <SplitView.Content>
+                <Grid>
+                    <ListView x:Name="PendingList"
+                              IsItemClickEnabled="False"
+                              SelectionMode="Single"
+                              Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <ListView.Header>
+                            <Border Padding="16,12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <TextBlock Text="Pending Items" 
+                                           Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            </Border>
+                        </ListView.Header>
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:PendingItem">
+                                <Grid Padding="12" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Image Source="{x:Bind Thumbnail, Mode=OneWay}" 
+                                           Width="32" Height="32"
+                                           Stretch="Uniform"/>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" 
+                                                   Style="{ThemeResource BodyTextBlockStyle}"/>
+                                        <TextBlock Text="{x:Bind Path}" 
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{x:Bind DisplaySize}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+
+                        <!-- Empty State -->
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+
+                    <!-- Empty State Overlay -->
+                    <Grid x:Name="EmptyStateGrid" 
+                          Visibility="Visible"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center">
+                            <SymbolIcon Symbol="Add" 
+                                        Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
+                            <TextBlock Text="No items added yet" 
+                                       Margin="0,16,0,4"
+                                       HorizontalAlignment="Center"
+                                       Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <TextBlock Text="Click 'Add Files' or 'Add Folder' to begin" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </SplitView.Content>
+
+            <!-- Right Pane: Info / Preview -->
+            <SplitView.Pane>
+                <Grid Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" 
+                      Padding="20">
+                    <StackPanel Spacing="20">
+                        <!-- Header -->
+                        <TextBlock Text="Container Settings" 
+                       Style="{ThemeResource SubtitleTextBlockStyle}" 
+                       FontWeight="SemiBold"/>
+
+                        <!-- Output File -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Output File" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="OutputPathText" 
+                                       Text="NewContainer.filo" 
+                                       TextWrapping="WrapWholeWords"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                            <Button Content="Change Location" 
+                                    Style="{StaticResource TextBlockButtonStyle}" 
+                                    Click="ChangeOutputPath_Click"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,4,0,0"/>
+                        </StackPanel>
+
+
+                        <!-- Items Summary -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Items to Add" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="ItemCountText" 
+                                       Text="0 items" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <!-- Estimated Size -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Estimated Size" 
+                                       FontWeight="SemiBold"/>
+                            <TextBlock x:Name="EstimatedSizeText" 
+                                       Text="Calculating..." 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <!-- Password Section -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Encryption Password" 
+                                       FontWeight="SemiBold"/>
+
+                            <TextBlock Text="Your files will be encrypted with AES-256" 
+                                       FontSize="13"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+
+                            <PasswordBox x:Name="PasswordText" 
+                                         PlaceholderText="Enter password (optional)"
+                                         PasswordRevealMode="Peek"
+                                         Margin="0,4,0,0"/>
+
+                            <TextBlock Text="Leave empty for no encryption" 
+                                       FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <!-- Create Button (Big & Prominent) -->
+                        <Button Content="Create Filo Container" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,20,0,0"
+                                Click="Create_Click"
+                                Height="48"
+                                FontSize="16"
+                                FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Grid>
+            </SplitView.Pane>
+        </SplitView>
+    </Grid>
+</Page>
