@@ -7,6 +7,11 @@
 
 <img width="512" height="512" alt="FILO" src="https://github.com/user-attachments/assets/d26100b0-2d96-480c-80b1-3e6501ebcd33" />
 
+<img width="1089" height="819" alt="image" src="https://github.com/user-attachments/assets/464971f7-9318-4b64-8edf-d27f1d485341" />
+<img width="1089" height="819" alt="image" src="https://github.com/user-attachments/assets/d41d9a3e-ce46-4007-8de1-4f3f1c9a3cfe" />
+<img width="1089" height="819" alt="image" src="https://github.com/user-attachments/assets/249e4784-83eb-4902-8921-1081e7495699" />
+
+
 ---
 
 ## FILO v1.2.0 Highlights
