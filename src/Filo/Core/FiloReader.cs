@@ -192,8 +192,8 @@ public class FiloReader
         if (!_fileMap.TryGetValue(fileName, out var entry))
             throw new FileNotFoundException($"File '{fileName}' not found in container.");
 
-        if (Header.Encryption == "AES256" && key == null)
-            throw new InvalidOperationException("This container is encrypted. Provide a key.");
+        if (Header.Encryption == "AES256" && Header.EncryptionMode != "AES-CBC")
+            throw new InvalidDataException("Unsupported encryption mode.");
 
         if (entry.Chunks.Count == 0)
             yield break;

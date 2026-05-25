@@ -111,6 +111,7 @@ public class FiloWriter
                 FileCount = _files.Count,
                 Compression = "none",
                 Encryption = _encrypt ? "AES256" : "none",
+                EncryptionMode = _encrypt ? "AES-CBC" : null,
                 Kdf = !string.IsNullOrWhiteSpace(_password) ? "PBKDF2" : null,
                 Salt = !string.IsNullOrWhiteSpace(_password) ? Convert.ToBase64String(_salt!) : null,
                 PasswordCheck = _encrypt ? SHA256.HashData(_key!) : null,
