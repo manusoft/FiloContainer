@@ -205,6 +205,8 @@ public class FiloWriter
             await output.WriteAsync(BitConverter.GetBytes(metaBytes.Length));
             await output.WriteAsync(metaBytes);
 
+            var checksumOffset = output.Position;
+
             // CHECKSUM block (placeholder)
             var checksumBytes = Encoding.UTF8.GetBytes("{}");
             await output.WriteAsync(BitConverter.GetBytes(checksumBytes.Length));
@@ -213,6 +215,8 @@ public class FiloWriter
             // FOOTER
             await output.WriteAsync(BitConverter.GetBytes(indexOffset));
             await output.WriteAsync(BitConverter.GetBytes(metadataOffset));
+            await output.WriteAsync(BitConverter.GetBytes(checksumOffset));
+            await output.WriteAsync(Encoding.ASCII.GetBytes(FiloConstants.FooterMagic));
 
         }
         catch (UnauthorizedAccessException uaEx)
