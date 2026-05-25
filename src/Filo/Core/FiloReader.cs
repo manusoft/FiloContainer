@@ -1,4 +1,5 @@
-﻿using ManuHub.Filo.Utils;
+﻿using ManuHub.Filo.Shared;
+using ManuHub.Filo.Utils;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -67,18 +68,36 @@ public class FiloReader
                 ?? throw new InvalidDataException("Failed to deserialize header.");
 
             // FOOTER
-            fs.Seek(-16, SeekOrigin.End);
+            fs.Seek(-FiloFooter.Size, SeekOrigin.End);
 
             var longBuffer = new byte[8];
 
+            // INDEX OFFSET
             await fs.ReadExactlyAsync(longBuffer);
             long indexOffset = BitConverter.ToInt64(longBuffer);
 
+            // METADATA OFFSET
             await fs.ReadExactlyAsync(longBuffer);
             long metadataOffset = BitConverter.ToInt64(longBuffer);
 
-            if (indexOffset >= fs.Length)
+            // CHECKSUM OFFSET
+            await fs.ReadExactlyAsync(longBuffer);
+            long checksumOffset = BitConverter.ToInt64(longBuffer);
+
+            // FOOTER MAGIC
+            var magicBuf = new byte[4];
+            await fs.ReadExactlyAsync(magicBuf);
+
+            var footerMagic = Encoding.ASCII.GetString(magicBuf);
+
+            if (footerMagic != "FLOF")
+                throw new InvalidDataException("Invalid FILO footer.");
+
+            if (indexOffset <= 0 || indexOffset >= fs.Length)
                 throw new InvalidDataException("Invalid index offset.");
+
+            if (metadataOffset < 0 || metadataOffset >= fs.Length)
+                throw new InvalidDataException("Invalid metadata offset.");
 
             // READ INDEX
             fs.Position = indexOffset;
@@ -210,6 +229,12 @@ public class FiloReader
         {
             fs.Position = chunk.Offset;
 
+            if (chunk.Offset < 0 || chunk.Offset >= fs.Length)
+            {
+                throw new InvalidDataException(
+                    $"Chunk {chunk.Id} has invalid offset: {chunk.Offset}");
+            }
+
             byte[] dataChunk;
 
             try
@@ -223,6 +248,12 @@ public class FiloReader
                     await fs.ReadExactlyAsync(lenBuf);
                     int len = BitConverter.ToInt32(lenBuf);
 
+                    if (len <= 0 || len > fs.Length)
+                    {
+                        throw new InvalidDataException(
+                            $"Invalid encrypted chunk length: {len}");
+                    }
+
                     var enc = new byte[len];
                     await fs.ReadExactlyAsync(enc);
 
@@ -232,8 +263,13 @@ public class FiloReader
                 {
                     var lenBuf = new byte[4];
                     await fs.ReadExactlyAsync(lenBuf);
-
                     int len = BitConverter.ToInt32(lenBuf);
+
+                    if (len <= 0 || len > fs.Length)
+                    {
+                        throw new InvalidDataException(
+                            $"Invalid chunk length: {len}");
+                    }
 
                     dataChunk = new byte[len];
                     await fs.ReadExactlyAsync(dataChunk);

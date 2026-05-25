@@ -1,7 +1,7 @@
 ﻿using ManuHub.Filo;
 using System.Security.Cryptography;
 
-string filoPath = "backupv1.1.filo";
+string filoPath = "backupv1.2.filo";
 
 try
 {
@@ -30,7 +30,7 @@ catch (Exception ex)
 try
 {
     Console.WriteLine("Read file header:");
-    var header = await FiloReader.ReadHeaderAsync("backupv1.1.filo");
+    var header = await FiloReader.ReadHeaderAsync("backupv1.2.filo");
 
     Console.WriteLine($"Files: {header.FileCount}");
     Console.WriteLine($"Created: {header.Created}");

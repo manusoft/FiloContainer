@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
 	<LangVersion>latest</LangVersion>	
 	<AssemblyName>Filo</AssemblyName>
-	<AssemblyVersion>1.1.0</AssemblyVersion>
+	<AssemblyVersion>1.2.0</AssemblyVersion>
 	<RootNamespace>ManuHub.Filo</RootNamespace>
 	<PackageId>Filo</PackageId>
-	<Version>1.1.0</Version>
+	<Version>1.2.0</Version>
 	<Authors>Manojbabu</Authors>
 	<Company>ManuHub</Company>
 	<PackageDescription>FILO – Fast, flexible multi-file container for .NET with streaming, encryption, and metadata support.</PackageDescription>
